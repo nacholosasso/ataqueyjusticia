@@ -1,0 +1,90 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Formación compartida: lectura y escritura públicas, sin autenticación.
+    // Solo esta colección es accesible; el resto de la base queda bloqueada
+    // por la regla default-deny de abajo.
+    // El documento puede incluir además `rivales`: mapa de fichas rivales
+    // ({ [id]: {x, y, numero} }), con el mismo modelo de coordenadas en %
+    // que `posiciones` y `pelota`.
+    match /formacion/{docId} {
+      allow read, write: if true;
+    }
+
+    // Chat del equipo: lectura pública y creación de mensajes validados.
+    // No se permite editar ni borrar mensajes existentes.
+    match /chat/{mensajeId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['nombre', 'texto', 'creado'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 20
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 300
+        && request.resource.data.creado == request.time;
+      allow update, delete: if false;
+    }
+
+    // Pizarra táctica: flechas dibujadas sobre la cancha, compartidas y
+    // editables por todo el grupo (mismo criterio abierto que "formacion").
+    // Las coordenadas son porcentajes (0-100) del contenedor de la cancha.
+    match /flechas/{flechaId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['x1', 'y1', 'x2', 'y2', 'creado', 'tipo'])
+        && request.resource.data.x1 is number && request.resource.data.x1 >= 0 && request.resource.data.x1 <= 100
+        && request.resource.data.y1 is number && request.resource.data.y1 >= 0 && request.resource.data.y1 <= 100
+        && request.resource.data.x2 is number && request.resource.data.x2 >= 0 && request.resource.data.x2 <= 100
+        && request.resource.data.y2 is number && request.resource.data.y2 >= 0 && request.resource.data.y2 <= 100
+        && request.resource.data.creado == request.time
+        && request.resource.data.tipo is string
+        && request.resource.data.tipo in ['carrera', 'pase', 'conduccion'];
+
+      allow update: if request.resource.data.keys().hasOnly(['x1', 'y1', 'x2', 'y2', 'creado', 'tipo'])
+        && request.resource.data.x1 is number && request.resource.data.x1 >= 0 && request.resource.data.x1 <= 100
+        && request.resource.data.y1 is number && request.resource.data.y1 >= 0 && request.resource.data.y1 <= 100
+        && request.resource.data.x2 is number && request.resource.data.x2 >= 0 && request.resource.data.x2 <= 100
+        && request.resource.data.y2 is number && request.resource.data.y2 >= 0 && request.resource.data.y2 <= 100
+        && request.resource.data.creado == resource.data.creado
+        && (!('tipo' in request.resource.data)
+            || (request.resource.data.tipo is string
+                && request.resource.data.tipo in ['carrera', 'pase', 'conduccion']));
+
+      allow delete: if true;
+    }
+
+    // Jugadas guardadas: "fotos" del tablero completo (posiciones, rivales,
+    // pelota y flechas) con un nombre, compartidas por todo el grupo.
+    // Guardar con un nombre existente sobrescribe esa jugada (update),
+    // por eso solo se valida el documento de nivel superior, igual que
+    // "formacion" (no se valida la forma interna de `tablero`).
+    match /jugadas/{jugadaId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['nombre', 'tablero', 'creado'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 40
+        && request.resource.data.tablero is map
+        && request.resource.data.creado == request.time;
+
+      // Sobrescritura: solo cambia `tablero`; `nombre` y `creado` se mantienen.
+      allow update: if request.resource.data.keys().hasOnly(['nombre', 'tablero', 'creado'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 40
+        && request.resource.data.tablero is map
+        && request.resource.data.creado == resource.data.creado
+        && request.resource.data.nombre == resource.data.nombre;
+
+      allow delete: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
