@@ -88,7 +88,7 @@ function Banca({ jugadores }) {
         <p className="text-center text-zinc-600 text-xs py-2 w-full">No hay más jugadores en la banca.</p>
       ) : (
         jugadores.map((jugador) => (
-          <div key={jugador.id} className="w-24 sm:w-28 lg:w-32 flex-shrink-0">
+          <div key={jugador.id} className="w-28 sm:w-36 lg:w-40 xl:w-44 flex-shrink-0">
             <JugadorArrastrable jugador={jugador} />
           </div>
         ))
@@ -391,7 +391,7 @@ export default function Formacion() {
               : 'bg-white text-zinc-900'
           }`}
         >
-          {bancaAbierta ? 'Ocultar banca' : 'Mostrar banca'}
+          {bancaAbierta ? 'Ocultar suplentes' : 'Mostrar suplentes'}
         </button>
       </div>
 
@@ -606,9 +606,9 @@ export default function Formacion() {
 
           {/* Banca */}
           {bancaAbierta && (
-            <div className="w-full sm:w-36 lg:w-40 xl:w-44 sm:flex-shrink-0">
+            <div className="w-full sm:w-44 lg:w-48 xl:w-52 sm:flex-shrink-0">
               <p className="text-center sm:text-left text-zinc-500 text-xs font-bold uppercase tracking-[0.3em] mt-8 sm:mt-0 mb-1">
-                Banca
+                Suplentes
               </p>
               <Banca jugadores={jugadoresBanca} />
             </div>

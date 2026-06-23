@@ -51,7 +51,7 @@ function CartaFormacionCompacta({ jugador, mostrarStats = false, onClick }) {
       </div>
 
       {/* Nombre */}
-      <span className={`w-full text-center font-display text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-wide ${texto} truncate leading-tight`}>
+      <span className={`w-full text-center font-display text-[9px] sm:text-[10px] lg:text-base uppercase tracking-wide ${texto} truncate leading-tight`}>
         {nombre}
       </span>
 
@@ -60,7 +60,7 @@ function CartaFormacionCompacta({ jugador, mostrarStats = false, onClick }) {
         <div
           className={`absolute inset-0 z-30 ${fondo} flex flex-col items-center justify-center gap-0.5 rounded-xl border-2 ${borde} px-1 overflow-hidden`}
         >
-          <span className={`font-display text-[8px] sm:text-[9px] uppercase tracking-wide ${texto} truncate w-full text-center leading-tight`}>
+          <span className={`font-display text-[8px] sm:text-[9px] lg:text-sm uppercase tracking-wide ${texto} truncate w-full text-center leading-tight`}>
             {nombre}
           </span>
           <div className="grid grid-cols-3 gap-x-1 gap-y-0.5 w-full">

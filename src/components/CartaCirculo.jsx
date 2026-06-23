@@ -18,7 +18,7 @@ function CartaCirculo({ jugador, onClick }) {
           onError={(e) => { e.target.src = FOTO_FALLBACK; }}
         />
       </div>
-      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 w-[180%] text-center font-display text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-wide text-white truncate leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none">
+      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 w-[180%] text-center font-display text-[13px] sm:text-sm lg:text-xl uppercase tracking-wide text-white truncate leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none">
         {nombre}
       </span>
     </div>
