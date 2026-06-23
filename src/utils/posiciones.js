@@ -21,8 +21,9 @@ export function coordsDesdeRect(elRect, canchaRect) {
 }
 
 // Distancia (en puntos porcentuales) dentro de la cual una coordenada se
-// ajusta a la de otro jugador ya ubicado, para que queden alineados.
-const UMBRAL_ALINEACION = 3;
+// ajusta a la de otro jugador ya ubicado, para que queden alineados. Se
+// mantiene chico para no "tragarse" correcciones finas de posición.
+const UMBRAL_ALINEACION = 1;
 
 function valorAlineado(valor, valores) {
   let mejor = valor;

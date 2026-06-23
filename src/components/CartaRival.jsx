@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { ESTILO_RIVAL } from '../utils/cartaEstilos';
 
-function CartaRival({ numero }) {
+function CartaRival({ numero, onClick }) {
   const { fondo, borde, texto, acento } = ESTILO_RIVAL;
 
   return (
-    <div className={`group relative w-full overflow-hidden ${fondo} border-2 ${borde} rounded-xl flex flex-col items-center px-1.5 py-0.5 sm:px-2 sm:py-0.5 shadow-xl shadow-black/50 transition-transform duration-200 hover:-translate-y-0.5`}>
+    <div onClick={onClick} className={`group relative w-full overflow-hidden ${fondo} border-2 ${borde} rounded-xl flex flex-col items-center px-1.5 py-0.5 sm:px-2 sm:py-0.5 shadow-xl shadow-black/50 transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer`}>
       {/* Brillo al pasar el mouse */}
       <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-[-20deg] pointer-events-none z-20" />
 

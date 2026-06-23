@@ -30,8 +30,15 @@ import PelotaCancha from './PelotaCancha';
 import Chat from './Chat';
 
 const MAX_RIVALES = 8;
+const ORDEN_MODOS_JUGADOR = ['circulo', 'fifa', 'stats'];
+const ORDEN_MODOS_RIVAL = ['circulo', 'fifa'];
 
-export function JugadorArrastrable({ jugador, compacta = false, circulo = false }) {
+function siguienteModo(ordenModos, actual) {
+  const idx = ordenModos.indexOf(actual);
+  return ordenModos[(idx + 1) % ordenModos.length];
+}
+
+export function JugadorArrastrable({ jugador, compacta = false, modo = 'circulo', onClickCarta }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: jugador.id });
 
   const style = {
@@ -43,12 +50,12 @@ export function JugadorArrastrable({ jugador, compacta = false, circulo = false 
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      {circulo ? (
-        <CartaCirculo jugador={jugador} />
-      ) : compacta ? (
-        <CartaFormacionCompacta jugador={jugador} />
-      ) : (
+      {!compacta ? (
         <CartaFormacion jugador={jugador} />
+      ) : modo === 'circulo' ? (
+        <CartaCirculo jugador={jugador} onClick={onClickCarta} />
+      ) : (
+        <CartaFormacionCompacta jugador={jugador} mostrarStats={modo === 'stats'} onClick={onClickCarta} />
       )}
     </div>
   );
@@ -117,7 +124,8 @@ export default function Formacion() {
   const [rivalActivo, setRivalActivo] = useState(null);
   const [arrastrandoId, setArrastrandoId] = useState(null);
   const [modoDibujo, setModoDibujo] = useState(false);
-  const [modoCirculo, setModoCirculo] = useState(true);
+  const [modosJugador, setModosJugador] = useState({});
+  const [modosRival, setModosRival] = useState({});
   const [tipoFlecha, setTipoFlecha] = useState(TIPO_FLECHA_DEFAULT);
   const [bancaAbierta, setBancaAbierta] = useState(true);
   const [mostrarGuardarJugada, setMostrarGuardarJugada] = useState(false);
@@ -142,6 +150,14 @@ export default function Formacion() {
 
   const buscarJugador = (id) => jugadores.find((j) => j.id === id) ?? null;
   const jugadoresBanca = jugadores.filter((j) => !posiciones[j.id]);
+
+  function ciclarModoJugador(id) {
+    setModosJugador((prev) => ({ ...prev, [id]: siguienteModo(ORDEN_MODOS_JUGADOR, prev[id] ?? 'circulo') }));
+  }
+
+  function ciclarModoRival(id) {
+    setModosRival((prev) => ({ ...prev, [id]: siguienteModo(ORDEN_MODOS_RIVAL, prev[id] ?? 'circulo') }));
+  }
 
   function tableroActual() {
     return {
@@ -269,6 +285,9 @@ export default function Formacion() {
     }
   }
 
+  const modoJugadorActivo = jugadorActivo ? modosJugador[jugadorActivo.id] ?? 'circulo' : null;
+  const modoRivalActivo = rivalActivo ? modosRival[arrastrandoId] ?? 'circulo' : null;
+
   return (
     <div className="w-full max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto">
       <p className="text-center text-zinc-500 text-xs font-bold uppercase tracking-[0.3em] mb-3">
@@ -321,17 +340,6 @@ export default function Formacion() {
               {TIPOS_FLECHA[tipo].etiqueta}
             </button>
           ))}
-        <button
-          type="button"
-          onClick={() => setModoCirculo((v) => !v)}
-          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
-            modoCirculo
-              ? 'bg-cyan-400 text-zinc-900'
-              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-          }`}
-        >
-          {modoCirculo ? 'Vista tarjeta' : 'Vista círculo'}
-        </button>
         <button
           type="button"
           onClick={agregarRival}
@@ -564,7 +572,8 @@ export default function Formacion() {
             <JugadoresCancha
               posiciones={posiciones}
               buscarJugador={buscarJugador}
-              circulo={modoCirculo}
+              modosJugador={modosJugador}
+              onCambiarModo={ciclarModoJugador}
               arrastrandoId={arrastrandoId}
               fichaAlFrente={zTop}
             />
@@ -576,7 +585,8 @@ export default function Formacion() {
             <RivalesCancha
               rivales={rivales}
               onQuitar={quitarRival}
-              circulo={modoCirculo}
+              modosRival={modosRival}
+              onCambiarModo={ciclarModoRival}
               arrastrandoId={arrastrandoId}
               fichaAlFrente={zTop}
             />
@@ -606,8 +616,8 @@ export default function Formacion() {
 
         <DragOverlay>
           {jugadorActivo ? (
-            <div className={modoCirculo ? 'w-12 sm:w-14 lg:w-16' : 'w-20 sm:w-24 lg:w-28'}>
-              {modoCirculo ? (
+            <div className={modoJugadorActivo === 'circulo' ? 'w-12 sm:w-14 lg:w-16' : 'w-20 sm:w-24 lg:w-28'}>
+              {modoJugadorActivo === 'circulo' ? (
                 <CartaCirculo jugador={jugadorActivo} />
               ) : posiciones[jugadorActivo.id] ? (
                 <CartaFormacionCompacta jugador={jugadorActivo} />
@@ -616,8 +626,8 @@ export default function Formacion() {
               )}
             </div>
           ) : rivalActivo ? (
-            <div className={modoCirculo ? 'w-12 sm:w-14 lg:w-16' : 'w-20 sm:w-24 lg:w-28'}>
-              {modoCirculo ? <CartaRivalCirculo numero={rivalActivo.numero} /> : <CartaRival numero={rivalActivo.numero} />}
+            <div className={modoRivalActivo === 'circulo' ? 'w-12 sm:w-14 lg:w-16' : 'w-20 sm:w-24 lg:w-28'}>
+              {modoRivalActivo === 'circulo' ? <CartaRivalCirculo numero={rivalActivo.numero} /> : <CartaRival numero={rivalActivo.numero} />}
             </div>
           ) : pelotaActiva ? (
             <div

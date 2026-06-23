@@ -1,13 +1,13 @@
 import { memo } from 'react';
 import { calcularOVR, obtenerEstiloCarta, ESTILO_RIVAL, FOTO_FALLBACK } from '../utils/cartaEstilos';
 
-function CartaCirculo({ jugador }) {
+function CartaCirculo({ jugador, onClick }) {
   const { nombre, fotoURL = '', atributos = {}, mediaForzada } = jugador;
   const ovr = calcularOVR(atributos, mediaForzada);
   const { fondo, borde, brillo } = obtenerEstiloCarta(ovr);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full cursor-pointer" onClick={onClick}>
       <div
         className={`group w-full aspect-square rounded-full overflow-hidden border-2 ${borde} ${fondo} ${brillo} shadow-xl shadow-black/50 transition-transform duration-200 hover:-translate-y-0.5`}
       >
@@ -25,12 +25,13 @@ function CartaCirculo({ jugador }) {
   );
 }
 
-function CartaRivalCirculo() {
+function CartaRivalCirculo({ onClick }) {
   const { fondo, borde, acento } = ESTILO_RIVAL;
 
   return (
     <div
-      className={`group relative w-full aspect-square rounded-full overflow-hidden border-2 ${borde} ${fondo} shadow-xl shadow-black/50 flex items-center justify-center transition-transform duration-200 hover:-translate-y-0.5`}
+      onClick={onClick}
+      className={`group relative w-full aspect-square rounded-full overflow-hidden border-2 ${borde} ${fondo} shadow-xl shadow-black/50 flex items-center justify-center transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer`}
     >
       <svg viewBox="0 0 24 24" className={`w-3/5 h-3/5 ${acento}`} fill="currentColor" aria-hidden="true">
         <circle cx="12" cy="8" r="4" />

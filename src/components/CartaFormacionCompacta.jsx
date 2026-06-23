@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo } from 'react';
 import { calcularOVR, obtenerEstiloCarta, FOTO_FALLBACK } from '../utils/cartaEstilos';
 import IndicadorForma from './IndicadorForma';
 
@@ -11,29 +11,15 @@ function StatCompacta({ valor, label, texto, acento }) {
   );
 }
 
-function CartaFormacionCompacta({ jugador }) {
+function CartaFormacionCompacta({ jugador, mostrarStats = false, onClick }) {
   const { nombre, dorsal = '-', posAbrev = '-', fotoURL = '', atributos = {}, mediaForzada, forma = 'normal' } = jugador;
   const ovr = calcularOVR(atributos, mediaForzada);
   const { fondo, borde, texto, acento, brillo } = obtenerEstiloCarta(ovr);
   const { rit = 0, tir = 0, pas = 0, reg = 0, def = 0, fis = 0 } = atributos;
-  const [mostrarStats, setMostrarStats] = useState(false);
-  const cardRef = useRef(null);
-
-  useEffect(() => {
-    if (!mostrarStats) return;
-    function handlePointerFuera(e) {
-      if (cardRef.current && !cardRef.current.contains(e.target)) {
-        setMostrarStats(false);
-      }
-    }
-    document.addEventListener('pointerdown', handlePointerFuera);
-    return () => document.removeEventListener('pointerdown', handlePointerFuera);
-  }, [mostrarStats]);
 
   return (
     <div
-      ref={cardRef}
-      onClick={() => setMostrarStats((v) => !v)}
+      onClick={onClick}
       className={`group relative w-full overflow-hidden ${fondo} border-2 ${borde} ${brillo} rounded-xl flex flex-col items-center px-1.5 py-0.5 sm:px-2 sm:py-0.5 shadow-xl shadow-black/50 transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer`}
     >
       {/* Brillo al pasar el mouse */}
@@ -72,7 +58,6 @@ function CartaFormacionCompacta({ jugador }) {
       {/* Panel de estadísticas (se muestra al tocar la carta) */}
       {mostrarStats && (
         <div
-          onClick={(e) => { e.stopPropagation(); setMostrarStats(false); }}
           className={`absolute inset-0 z-30 ${fondo} flex flex-col items-center justify-center gap-0.5 rounded-xl border-2 ${borde} px-1 overflow-hidden`}
         >
           <span className={`font-display text-[8px] sm:text-[9px] uppercase tracking-wide ${texto} truncate w-full text-center leading-tight`}>

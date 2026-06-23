@@ -4,7 +4,7 @@ import CartaRival from './CartaRival';
 import { CartaRivalCirculo } from './CartaCirculo';
 import { zIndexFicha } from '../utils/zIndexFicha';
 
-function RivalArrastrable({ rivalId, numero, onQuitar, circulo }) {
+function RivalArrastrable({ rivalId, numero, onQuitar, modo, onCambiarModo }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: rivalId });
 
   const style = {
@@ -16,7 +16,11 @@ function RivalArrastrable({ rivalId, numero, onQuitar, circulo }) {
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="relative">
-      {circulo ? <CartaRivalCirculo numero={numero} /> : <CartaRival numero={numero} />}
+      {modo === 'circulo' ? (
+        <CartaRivalCirculo numero={numero} onClick={() => onCambiarModo(rivalId)} />
+      ) : (
+        <CartaRival numero={numero} onClick={() => onCambiarModo(rivalId)} />
+      )}
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
@@ -30,18 +34,21 @@ function RivalArrastrable({ rivalId, numero, onQuitar, circulo }) {
   );
 }
 
-export default function RivalesCancha({ rivales, onQuitar, circulo = false, arrastrandoId, fichaAlFrente }) {
+export default function RivalesCancha({ rivales, onQuitar, modosRival, onCambiarModo, arrastrandoId, fichaAlFrente }) {
   return (
     <>
-      {Object.entries(rivales).map(([rivalId, { x, y, numero }]) => (
-        <div
-          key={rivalId}
-          className={`absolute ${zIndexFicha(rivalId, arrastrandoId, fichaAlFrente, 'z-10', 'z-20')} ${circulo ? 'w-[10%]' : 'w-[18%]'}`}
-          style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-        >
-          <RivalArrastrable rivalId={rivalId} numero={numero} onQuitar={onQuitar} circulo={circulo} />
-        </div>
-      ))}
+      {Object.entries(rivales).map(([rivalId, { x, y, numero }]) => {
+        const modo = modosRival[rivalId] ?? 'circulo';
+        return (
+          <div
+            key={rivalId}
+            className={`absolute ${zIndexFicha(rivalId, arrastrandoId, fichaAlFrente, 'z-10', 'z-20')} ${modo === 'circulo' ? 'w-[10%]' : 'w-[18%]'}`}
+            style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
+          >
+            <RivalArrastrable rivalId={rivalId} numero={numero} onQuitar={onQuitar} modo={modo} onCambiarModo={onCambiarModo} />
+          </div>
+        );
+      })}
     </>
   );
 }
