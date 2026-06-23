@@ -18,7 +18,7 @@ import { useJugadas } from '../hooks/useJugadas';
 import { ROL_ESTILOS } from '../utils/posicionColores';
 import { TIPOS_FORMACION } from '../utils/formaciones';
 import { TIPOS_FLECHA, TIPO_FLECHA_DEFAULT, ORDEN_TIPOS_FLECHA } from '../utils/tipoFlecha';
-import { coordsDesdeRect } from '../utils/posiciones';
+import { coordsDesdeRect, alinearConOtros } from '../utils/posiciones';
 import CartaFormacion from './CartaFormacion';
 import CartaFormacionCompacta from './CartaFormacionCompacta';
 import { CartaCirculo, CartaRivalCirculo } from './CartaCirculo';
@@ -259,7 +259,8 @@ export default function Formacion() {
     }
     if (over.id === 'cancha') {
       const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
-      moverJugador(id, coords);
+      const otros = Object.fromEntries(Object.entries(posiciones).filter(([pid]) => pid !== id));
+      moverJugador(id, alinearConOtros(coords, otros));
       return;
     }
     // Soltado sobre otro jugador ya ubicado: se intercambian de lugar.

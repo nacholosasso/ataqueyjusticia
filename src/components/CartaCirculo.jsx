@@ -7,15 +7,20 @@ function CartaCirculo({ jugador }) {
   const { fondo, borde, brillo } = obtenerEstiloCarta(ovr);
 
   return (
-    <div
-      className={`group relative w-full aspect-square rounded-full overflow-hidden border-2 ${borde} ${fondo} ${brillo} shadow-xl shadow-black/50 transition-transform duration-200 hover:-translate-y-0.5`}
-    >
-      <img
-        className="w-full h-full object-cover"
-        src={fotoURL || FOTO_FALLBACK}
-        alt={`Foto de ${nombre}`}
-        onError={(e) => { e.target.src = FOTO_FALLBACK; }}
-      />
+    <div className="relative w-full">
+      <div
+        className={`group w-full aspect-square rounded-full overflow-hidden border-2 ${borde} ${fondo} ${brillo} shadow-xl shadow-black/50 transition-transform duration-200 hover:-translate-y-0.5`}
+      >
+        <img
+          className="w-full h-full object-cover"
+          src={fotoURL || FOTO_FALLBACK}
+          alt={`Foto de ${nombre}`}
+          onError={(e) => { e.target.src = FOTO_FALLBACK; }}
+        />
+      </div>
+      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 w-[180%] text-center font-display text-[9px] sm:text-[10px] lg:text-xs uppercase tracking-wide text-white truncate leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none">
+        {nombre}
+      </span>
     </div>
   );
 }

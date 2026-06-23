@@ -19,3 +19,32 @@ export function coordsDesdeRect(elRect, canchaRect) {
     y: clampConMargen(((centroY - canchaRect.top) / canchaRect.height) * 100, margenY),
   };
 }
+
+// Distancia (en puntos porcentuales) dentro de la cual una coordenada se
+// ajusta a la de otro jugador ya ubicado, para que queden alineados.
+const UMBRAL_ALINEACION = 3;
+
+function valorAlineado(valor, valores) {
+  let mejor = valor;
+  let mejorDist = UMBRAL_ALINEACION;
+  for (const v of valores) {
+    const dist = Math.abs(v - valor);
+    if (dist <= mejorDist) {
+      mejor = v;
+      mejorDist = dist;
+    }
+  }
+  return mejor;
+}
+
+// Ajusta `coords` para alinear al jugador con otros ya ubicados en la
+// cancha: si su x o y (de forma independiente) queda a `UMBRAL_ALINEACION`
+// puntos o menos de la de otro, la iguala a esa para que queden en la misma
+// línea (vertical u horizontal).
+export function alinearConOtros(coords, posicionesOtros) {
+  const otros = Object.values(posicionesOtros);
+  return {
+    x: valorAlineado(coords.x, otros.map((p) => p.x)),
+    y: valorAlineado(coords.y, otros.map((p) => p.y)),
+  };
+}
