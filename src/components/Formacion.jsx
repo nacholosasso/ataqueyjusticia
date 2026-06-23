@@ -273,14 +273,16 @@ export default function Formacion() {
       if (posiciones[id]) quitarJugador(id);
       return;
     }
-    if (over.id === 'cancha') {
+    // Soltado sobre la cancha, o sobre su propia zona (arrastre corto que no
+    // llega a salir de su propio droppable): se reubica en el punto soltado.
+    if (over.id === 'cancha' || over.id === id) {
       const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
       const otros = Object.fromEntries(Object.entries(posiciones).filter(([pid]) => pid !== id));
       moverJugador(id, alinearConOtros(coords, otros));
       return;
     }
     // Soltado sobre otro jugador ya ubicado: se intercambian de lugar.
-    if (over.id !== id && posiciones[String(over.id)]) {
+    if (posiciones[String(over.id)]) {
       intercambiarJugadores(id, String(over.id));
     }
   }
