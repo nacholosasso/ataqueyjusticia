@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -133,12 +133,30 @@ export default function Formacion() {
   const [jugadaSeleccionada, setJugadaSeleccionada] = useState('');
   const [exportando, setExportando] = useState(false);
   const [errorExportar, setErrorExportar] = useState(null);
+  const [pantallaCompleta, setPantallaCompleta] = useState(false);
   const canchaRef = useRef(null);
+  const tableroRef = useRef(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
   );
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      setPantallaCompleta(Boolean(document.fullscreenElement));
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  function togglePantallaCompleta() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      tableroRef.current?.requestFullscreen();
+    }
+  }
 
   if (cargandoPlantel || cargandoFormacion) {
     return (
@@ -296,6 +314,14 @@ export default function Formacion() {
         Formación{tipo ? ` · ${tipo}` : ''}
       </p>
 
+      <div
+        ref={tableroRef}
+        className={
+          pantallaCompleta
+            ? 'fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center gap-4 p-4 overflow-y-auto'
+            : undefined
+        }
+      >
       <div className="flex justify-center flex-wrap gap-2 mb-3">
         {TIPOS_FORMACION.map((t) => (
           <button
@@ -392,6 +418,17 @@ export default function Formacion() {
           }`}
         >
           {bancaAbierta ? 'Ocultar suplentes' : 'Mostrar suplentes'}
+        </button>
+        <button
+          type="button"
+          onClick={togglePantallaCompleta}
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
+            pantallaCompleta
+              ? 'bg-white text-zinc-900'
+              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+          }`}
+        >
+          {pantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla completa'}
         </button>
       </div>
 
@@ -515,10 +552,14 @@ export default function Formacion() {
               oculta, para aprovechar el espacio horizontal liberado. */}
           <div
             ref={canchaRef}
-            className={`relative rounded-2xl overflow-hidden border border-zinc-700/40 w-full sm:flex-1 aspect-[3/4] shadow-[inset_0_0_60px_rgba(0,0,0,0.5)] ${
-              bancaAbierta
-                ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
-                : 'sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px] xl:max-w-[860px] 2xl:max-w-[1000px]'
+            className={`relative rounded-2xl overflow-hidden border border-zinc-700/40 aspect-[3/4] shadow-[inset_0_0_60px_rgba(0,0,0,0.5)] ${
+              pantallaCompleta
+                ? 'h-[78vh] w-auto'
+                : `w-full sm:flex-1 ${
+                    bancaAbierta
+                      ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
+                      : 'sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px] xl:max-w-[860px] 2xl:max-w-[1000px]'
+                  }`
             }`}
             style={{
               background: 'linear-gradient(180deg, #06321a 0%, #0d5c2e 55%, #1f9b4d 100%)',
@@ -645,6 +686,7 @@ export default function Formacion() {
           ) : null}
         </DragOverlay>
       </DndContext>
+      </div>
 
       {/* Chat: siempre debajo de la cancha */}
       <div className="mt-4 max-w-2xl mx-auto">
