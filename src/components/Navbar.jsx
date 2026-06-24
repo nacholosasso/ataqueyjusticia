@@ -16,7 +16,7 @@ export default function Navbar({ activeSection, onChangeSection }) {
                 flex-shrink-0 px-4 py-4 text-sm font-semibold uppercase tracking-wider
                 border-b-2 transition-colors duration-200 cursor-pointer
                 ${activeSection === id
-                  ? 'border-white text-white'
+                  ? 'border-amber-400 text-amber-400'
                   : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:border-zinc-600'
                 }
               `}

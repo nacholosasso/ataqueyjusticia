@@ -46,9 +46,14 @@ function App() {
                 className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain select-none drop-shadow-[0_4px_14px_rgba(0,0,0,0.6)]"
               />
             </div>
-            <h1 className="font-display text-xl sm:text-2xl lg:text-3xl tracking-wide text-white uppercase leading-none">
-              Ataque y Justicia
-            </h1>
+            <div className="flex flex-col items-center sm:items-start">
+              <h1 className="font-display text-xl sm:text-2xl lg:text-3xl tracking-wide text-white uppercase leading-none">
+                Ataque y Justicia
+              </h1>
+              <p className="font-display text-xs sm:text-sm tracking-[0.2em] text-amber-400 uppercase mt-1">
+                El Halcón de Villa Urquiza
+              </p>
+            </div>
           </div>
         </div>
       </header>
@@ -65,6 +70,9 @@ function App() {
       <footer className="border-t border-white/5 py-8 text-center">
         <p className="text-zinc-600 text-xs font-semibold uppercase tracking-[0.3em]">
           Ataque y Justicia
+        </p>
+        <p className="text-amber-400/70 text-[10px] font-semibold uppercase tracking-[0.25em] mt-1">
+          El Halcón de Villa Urquiza
         </p>
       </footer>
 
