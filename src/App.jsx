@@ -30,14 +30,23 @@ function App() {
           }}
         />
 
-        <div className="relative z-10 py-3 sm:py-4 px-4 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-            <img
-              src="/escudo.jpeg"
-              alt="Escudo Ataque y Justicia"
-              className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 object-contain rounded-full border border-white/10 shadow-lg select-none flex-shrink-0"
-            />
-            <h1 className="font-display text-lg sm:text-2xl lg:text-3xl tracking-wide text-white uppercase leading-none">
+        <div className="relative z-10 py-4 sm:py-5 px-4 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <div className="relative flex-shrink-0">
+              <div
+                className="absolute inset-0 -m-3 rounded-full blur-xl opacity-70 pointer-events-none"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(234,179,8,0.35) 0%, transparent 70%)',
+                }}
+              />
+              <img
+                src="/escudo.jpeg"
+                alt="Escudo Ataque y Justicia"
+                className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain select-none drop-shadow-[0_4px_14px_rgba(0,0,0,0.6)]"
+              />
+            </div>
+            <h1 className="font-display text-xl sm:text-2xl lg:text-3xl tracking-wide text-white uppercase leading-none">
               Ataque y Justicia
             </h1>
           </div>
