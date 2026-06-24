@@ -432,7 +432,9 @@ export default function Formacion() {
         </button>
       </div>
 
-      {/* Leyenda de flechas: tipos y orden de los movimientos (siempre visible) */}
+      {/* Leyenda de flechas y panel de pizarras: ocultos en pantalla completa
+          para que la cancha aproveche ese alto liberado. */}
+      {!pantallaCompleta && (
       <div className="flex justify-center flex-wrap items-center gap-x-4 gap-y-1.5 mb-6">
         {ORDEN_TIPOS_FLECHA.map((tipo) => (
           <div key={tipo} className="flex items-center gap-1.5">
@@ -442,7 +444,9 @@ export default function Formacion() {
         ))}
         <span className="text-zinc-500 text-xs">①②③ → orden de los movimientos de la jugada</span>
       </div>
+      )}
 
+      {!pantallaCompleta && (
       <div className="flex justify-center flex-wrap items-center gap-2 mb-6">
         <span className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em] mr-1">
           Pizarras
@@ -536,6 +540,7 @@ export default function Formacion() {
           Borrar
         </button>
       </div>
+      )}
 
       {(error || errorPlantel || errorJugadas || errorExportar) && (
         <div className="mb-4 bg-red-950/40 border border-red-900 rounded-xl p-3 text-center">
@@ -554,7 +559,7 @@ export default function Formacion() {
             ref={canchaRef}
             className={`relative rounded-2xl overflow-hidden border border-zinc-700/40 aspect-[3/4] shadow-[inset_0_0_60px_rgba(0,0,0,0.5)] ${
               pantallaCompleta
-                ? 'h-[78vh] w-auto'
+                ? 'h-[85vh] w-auto'
                 : `w-full sm:flex-1 ${
                     bancaAbierta
                       ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
