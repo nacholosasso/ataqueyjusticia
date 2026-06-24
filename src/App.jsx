@@ -33,7 +33,7 @@ function App() {
         <div className="relative z-10 py-3 sm:py-4 px-4 text-center">
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <img
-              src="/escudo.jpg"
+              src="/escudo.jpeg"
               alt="Escudo Ataque y Justicia"
               className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 object-contain rounded-full border border-white/10 shadow-lg select-none flex-shrink-0"
             />
