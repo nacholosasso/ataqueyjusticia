@@ -35,7 +35,7 @@ function CartaFormacionCompacta({ jugador, mostrarStats = false, onClick }) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <img src="/escudo.jpeg" alt="Escudo" className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border border-white/30" />
+          <img src="/escudo.jpeg" alt="Escudo" className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 rounded-full object-contain bg-black/80 border border-white/70 shadow" />
           <span className={`text-[9px] sm:text-[10px] font-bold ${texto}`}>#{dorsal}</span>
         </div>
       </div>

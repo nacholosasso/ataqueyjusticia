@@ -32,7 +32,7 @@ function CartaFormacion({ jugador }) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <img src="/escudo.jpeg" alt="Escudo" className="w-4 h-4 sm:w-5 sm:h-5 lg:w-7 lg:h-7 rounded-full object-cover border border-white/30" />
+          <img src="/escudo.jpeg" alt="Escudo" className="w-6 h-6 sm:w-7 sm:h-7 lg:w-9 lg:h-9 rounded-full object-contain bg-black/80 border border-white/70 shadow" />
           <span className={`text-[9px] sm:text-[10px] lg:text-sm font-bold ${texto}`}>#{dorsal}</span>
         </div>
       </div>
