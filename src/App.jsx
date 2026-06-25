@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import Navbar from './components/Navbar';
+import IconoInstagram from './components/IconoInstagram';
 import Plantel from './pages/Plantel';
+
+const INSTAGRAM_URL = 'https://www.instagram.com/ataqueyjusticiavu/';
 
 const SECCIONES = {
   'inicio': <Plantel />,
@@ -14,6 +17,15 @@ function App() {
 
       {/* HEADER */}
       <header className="relative overflow-hidden border-b border-white/5">
+        <a
+          href={INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram de Ataque y Justicia"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 text-zinc-400 hover:text-amber-400 transition-colors duration-200"
+        >
+          <IconoInstagram className="w-6 h-6 sm:w-7 sm:h-7" />
+        </a>
         <div className="absolute inset-0 bg-zinc-950" />
         <div
           className="absolute inset-0 pointer-events-none"
@@ -74,6 +86,15 @@ function App() {
         <p className="text-amber-400/70 text-[10px] font-semibold uppercase tracking-[0.25em] mt-1">
           El Halcón de Villa Urquiza
         </p>
+        <a
+          href={INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram de Ataque y Justicia"
+          className="inline-flex mt-4 text-zinc-500 hover:text-amber-400 transition-colors duration-200"
+        >
+          <IconoInstagram className="w-5 h-5" />
+        </a>
       </footer>
 
     </div>
