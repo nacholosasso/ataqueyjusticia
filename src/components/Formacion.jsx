@@ -375,7 +375,7 @@ export default function Formacion() {
         <button
           type="button"
           onClick={() => setHerramienta('mover')}
-          className={`px-4 py-2 rounded-full text-sm font-bold tracking-wider transition-colors flex items-center gap-2 ${
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors flex items-center gap-1.5 ${
             herramienta === 'mover'
               ? 'bg-zinc-800 text-amber-400 ring-2 ring-amber-400'
               : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
@@ -389,7 +389,7 @@ export default function Formacion() {
             key={tipo}
             type="button"
             onClick={() => setHerramienta(tipo)}
-            className={`px-4 py-2 rounded-full text-sm font-bold tracking-wider transition-colors flex items-center gap-2 ${
+            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors flex items-center gap-1.5 ${
               tipo === herramienta
                 ? 'bg-zinc-800 text-amber-400 ring-2 ring-amber-400'
                 : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
@@ -402,7 +402,7 @@ export default function Formacion() {
         <button
           type="button"
           onClick={() => setHerramienta('texto')}
-          className={`px-4 py-2 rounded-full text-sm font-bold tracking-wider transition-colors flex items-center gap-2 ${
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors flex items-center gap-1.5 ${
             herramienta === 'texto'
               ? 'bg-zinc-800 text-amber-400 ring-2 ring-amber-400'
               : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
