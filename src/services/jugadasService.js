@@ -17,6 +17,7 @@ import { db } from './firebaseConfig';
 const JUGADAS_REF = collection(db, 'jugadas');
 const FORMACION_REF = doc(db, 'formacion', 'actual');
 const FLECHAS_REF = collection(db, 'flechas');
+const ANOTACIONES_REF = collection(db, 'anotaciones');
 
 export function suscribirseAJugadas(onChange, onError) {
   const q = query(JUGADAS_REF, orderBy('creado'));
@@ -42,15 +43,19 @@ export async function eliminarJugada(id) {
 }
 
 export async function cargarJugada(tablero) {
-  const { tipo = null, posiciones = {}, pelota = { x: 50, y: 50 }, rivales = {}, flechas = [] } = tablero;
+  const { tipo = null, posiciones = {}, pelota = { x: 50, y: 50 }, rivales = {}, flechas = [], anotaciones = [] } = tablero;
 
   await setDoc(FORMACION_REF, { tipo, posiciones, pelota, rivales });
 
-  const actuales = await getDocs(FLECHAS_REF);
+  const [flechasActuales, anotacionesActuales] = await Promise.all([getDocs(FLECHAS_REF), getDocs(ANOTACIONES_REF)]);
   const batch = writeBatch(db);
-  actuales.docs.forEach((d) => batch.delete(d.ref));
+  flechasActuales.docs.forEach((d) => batch.delete(d.ref));
+  anotacionesActuales.docs.forEach((d) => batch.delete(d.ref));
   flechas.forEach(({ x1, y1, x2, y2, tipo: tipoFlecha }) => {
     batch.set(doc(FLECHAS_REF), { x1, y1, x2, y2, tipo: tipoFlecha, creado: serverTimestamp() });
+  });
+  anotaciones.forEach(({ x, y, texto }) => {
+    batch.set(doc(ANOTACIONES_REF), { x, y, texto, creado: serverTimestamp() });
   });
   await batch.commit();
 }

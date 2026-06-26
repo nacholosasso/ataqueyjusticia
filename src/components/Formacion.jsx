@@ -117,7 +117,20 @@ export default function Formacion() {
     vaciarCancha,
     zTop,
   } = useFormacion();
-  const { flechas, agregar: agregarFlecha, mover: moverFlecha, eliminar: eliminarFlecha, limpiar: limpiarFlechas } = useTactica();
+  const {
+    flechas,
+    anotaciones,
+    agregar: agregarFlecha,
+    mover: moverFlecha,
+    eliminar: eliminarFlecha,
+    agregarTexto,
+    moverTexto,
+    editarTexto,
+    eliminarTexto,
+    limpiar: limpiarFlechas,
+    deshacer,
+    puedeDeshacer,
+  } = useTactica();
   const { jugadas, cargando: cargandoJugadas, error: errorJugadas, guardar: guardarJugada, cargar: cargarJugada, actualizar: actualizarJugada, eliminar: eliminarJugada } = useJugadas();
   const [jugadorActivo, setJugadorActivo] = useState(null);
   const [pelotaActiva, setPelotaActiva] = useState(false);
@@ -126,7 +139,7 @@ export default function Formacion() {
   const [modoDibujo, setModoDibujo] = useState(false);
   const [modosJugador, setModosJugador] = useState({});
   const [modosRival, setModosRival] = useState({});
-  const [tipoFlecha, setTipoFlecha] = useState(TIPO_FLECHA_DEFAULT);
+  const [herramienta, setHerramienta] = useState(TIPO_FLECHA_DEFAULT);
   const [bancaAbierta, setBancaAbierta] = useState(true);
   const [mostrarGuardarJugada, setMostrarGuardarJugada] = useState(false);
   const [nombreJugada, setNombreJugada] = useState('');
@@ -184,6 +197,7 @@ export default function Formacion() {
       pelota,
       rivales,
       flechas: flechas.map(({ x1, y1, x2, y2, tipo: tipoFlechaGuardada }) => ({ x1, y1, x2, y2, tipo: tipoFlechaGuardada })),
+      anotaciones: anotaciones.map(({ x, y, texto }) => ({ x, y, texto })),
     };
   }
 
@@ -217,7 +231,7 @@ export default function Formacion() {
 
   function handleVaciarCancha() {
     vaciarCancha();
-    if (flechas.length > 0) limpiarFlechas();
+    if (flechas.length > 0 || anotaciones.length > 0) limpiarFlechas();
   }
 
   async function handleExportarImagen() {
@@ -356,18 +370,31 @@ export default function Formacion() {
             <button
               key={tipo}
               type="button"
-              onClick={() => setTipoFlecha(tipo)}
+              onClick={() => setHerramienta(tipo)}
               className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors flex items-center gap-1.5 ${
-                tipo === tipoFlecha
+                tipo === herramienta
                   ? 'bg-white text-zinc-900'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
               }`}
-              style={tipo === tipoFlecha ? { boxShadow: `inset 0 0 0 2px ${TIPOS_FLECHA[tipo].color}` } : undefined}
+              style={tipo === herramienta ? { boxShadow: `inset 0 0 0 2px ${TIPOS_FLECHA[tipo].color}` } : undefined}
             >
               <MuestraFlecha tipo={tipo} />
               {TIPOS_FLECHA[tipo].etiqueta}
             </button>
           ))}
+        {modoDibujo && (
+          <button
+            type="button"
+            onClick={() => setHerramienta('texto')}
+            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
+              herramienta === 'texto'
+                ? 'bg-white text-zinc-900'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+            }`}
+          >
+            Texto
+          </button>
+        )}
         <button
           type="button"
           onClick={agregarRival}
@@ -380,7 +407,19 @@ export default function Formacion() {
         >
           + Rival
         </button>
-        {flechas.length > 0 && (
+        <button
+          type="button"
+          onClick={deshacer}
+          disabled={!puedeDeshacer}
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
+            puedeDeshacer
+              ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+              : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          Deshacer
+        </button>
+        {(flechas.length > 0 || anotaciones.length > 0) && (
           <button
             type="button"
             onClick={limpiarFlechas}
@@ -639,14 +678,19 @@ export default function Formacion() {
               fichaAlFrente={zTop}
             />
 
-            {/* Pizarra táctica: flechas (lectura siempre, edición en modo dibujo) */}
+            {/* Pizarra táctica: flechas y anotaciones (lectura siempre, edición en modo dibujo) */}
             <PizarraTactica
               flechas={flechas}
+              anotaciones={anotaciones}
               modoDibujo={modoDibujo}
-              tipoSeleccionado={tipoFlecha}
+              herramienta={herramienta}
               onAgregar={agregarFlecha}
               onMover={moverFlecha}
               onEliminar={eliminarFlecha}
+              onAgregarTexto={agregarTexto}
+              onMoverTexto={moverTexto}
+              onEditarTexto={editarTexto}
+              onEliminarTexto={eliminarTexto}
             />
           </div>
 

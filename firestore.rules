@@ -56,6 +56,28 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    // Anotaciones de texto sobre la pizarra táctica: misma lógica abierta
+    // que "flechas" (un punto en % en vez de un segmento, más un texto corto).
+    match /anotaciones/{anotacionId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['x', 'y', 'texto', 'creado'])
+        && request.resource.data.x is number && request.resource.data.x >= 0 && request.resource.data.x <= 100
+        && request.resource.data.y is number && request.resource.data.y >= 0 && request.resource.data.y <= 100
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 60
+        && request.resource.data.creado == request.time;
+
+      allow update: if request.resource.data.keys().hasOnly(['x', 'y', 'texto', 'creado'])
+        && request.resource.data.x is number && request.resource.data.x >= 0 && request.resource.data.x <= 100
+        && request.resource.data.y is number && request.resource.data.y >= 0 && request.resource.data.y <= 100
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 60
+        && request.resource.data.creado == resource.data.creado;
+
+      allow delete: if true;
+    }
+
     // Jugadas guardadas: "fotos" del tablero completo (posiciones, rivales,
     // pelota y flechas) con un nombre, compartidas por todo el grupo.
     // Guardar con un nombre existente sobrescribe esa jugada (update),

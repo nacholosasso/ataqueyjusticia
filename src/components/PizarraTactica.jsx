@@ -3,6 +3,8 @@ import { TIPOS_FLECHA, TIPO_FLECHA_DEFAULT, ORDEN_TIPOS_FLECHA } from '../utils/
 
 const COLOR_BORRAR = '#dc2626';
 const LARGO_MINIMO = 4; // % - distancia mínima para crear una flecha
+const UMBRAL_CLIC_TEXTO = 1.5; // % - por debajo de esto, un gesto sobre un texto se trata como clic (editar) y no como arrastre (mover)
+const MAX_LARGO_TEXTO = 60; // mismo límite que valida firestore.rules para `anotaciones.texto`
 
 function clamp(valor) {
   return Math.min(100, Math.max(0, valor));
@@ -57,21 +59,49 @@ function TrazoFlecha({ x1, y1, x2, y2, tipo, opacity }) {
   return <line x1={x1} y1={y1} x2={x2} y2={y2} strokeDasharray={dasharray ?? undefined} {...comun} />;
 }
 
-export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, onAgregar, onMover, onEliminar }) {
+// Botón de borrar (círculo rojo con X), reutilizado por flechas y anotaciones.
+function BotonBorrar({ x, y, onPointerDown }) {
+  return (
+    <g style={{ cursor: 'pointer' }} onPointerDown={onPointerDown}>
+      <circle cx={x} cy={y} r={2} fill={COLOR_BORRAR} stroke="#fff" strokeWidth={0.3} />
+      <line x1={x - 0.8} y1={y - 0.8} x2={x + 0.8} y2={y + 0.8} stroke="#fff" strokeWidth={0.4} strokeLinecap="round" />
+      <line x1={x - 0.8} y1={y + 0.8} x2={x + 0.8} y2={y - 0.8} stroke="#fff" strokeWidth={0.4} strokeLinecap="round" />
+    </g>
+  );
+}
+
+export default function PizarraTactica({
+  flechas,
+  anotaciones,
+  modoDibujo,
+  herramienta,
+  onAgregar,
+  onMover,
+  onEliminar,
+  onAgregarTexto,
+  onMoverTexto,
+  onEditarTexto,
+  onEliminarTexto,
+}) {
   const svgRef = useRef(null);
   const [nueva, setNueva] = useState(null);
   const [arrastre, setArrastre] = useState(null);
   const [overrides, setOverrides] = useState({});
-  const [seleccionada, setSeleccionada] = useState(null);
+  const [seleccionada, setSeleccionada] = useState(null); // { tipo: 'flecha' | 'texto', id }
 
-  // Si la flecha seleccionada se borra desde otro lado (p. ej. "Limpiar
+  // Si el elemento seleccionado se borra desde otro lado (p. ej. "Limpiar
   // todo"), soltamos la selección para no dejar un id colgado.
   useEffect(() => {
-    if (seleccionada && !flechas.some((f) => f.id === seleccionada)) setSeleccionada(null);
-  }, [flechas, seleccionada]);
+    if (!seleccionada) return;
+    const existe =
+      seleccionada.tipo === 'flecha'
+        ? flechas.some((f) => f.id === seleccionada.id)
+        : anotaciones.some((a) => a.id === seleccionada.id);
+    if (!existe) setSeleccionada(null);
+  }, [flechas, anotaciones, seleccionada]);
 
-  // Tecla Supr/Backspace borra la flecha seleccionada, salvo que el foco
-  // esté en un campo de texto (chat, nombre de pizarra, etc.).
+  // Tecla Supr/Backspace borra la flecha o anotación seleccionada, salvo que
+  // el foco esté en un campo de texto (chat, nombre de pizarra, etc.).
   useEffect(() => {
     function onKeyDown(e) {
       if (!seleccionada) return;
@@ -79,18 +109,28 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
       const tag = e.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
       e.preventDefault();
-      onEliminar(seleccionada);
+      if (seleccionada.tipo === 'flecha') onEliminar(seleccionada.id);
+      else onEliminarTexto(seleccionada.id);
       setSeleccionada(null);
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [seleccionada, onEliminar]);
+  }, [seleccionada, onEliminar, onEliminarTexto]);
 
   function handlePointerDownFondo(e) {
     if (e.target !== svgRef.current) return;
     setSeleccionada(null);
     if (!modoDibujo) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
+
+    if (herramienta === 'texto') {
+      const texto = window.prompt('Texto de la anotación:');
+      if (texto && texto.trim()) {
+        onAgregarTexto({ x, y, texto: texto.trim().slice(0, MAX_LARGO_TEXTO) });
+      }
+      return;
+    }
+
     setNueva({ x1: x, y1: y, x2: x, y2: y });
     svgRef.current.setPointerCapture(e.pointerId);
   }
@@ -114,6 +154,21 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
     svgRef.current.setPointerCapture(e.pointerId);
   }
 
+  function iniciarInteraccionTexto(e, anotacion) {
+    setSeleccionada({ tipo: 'texto', id: anotacion.id });
+    if (!modoDibujo) return;
+    const { x, y } = coordsDesdeEvento(svgRef.current, e);
+    setArrastre({
+      id: anotacion.id,
+      modo: 'texto',
+      inicioX: x,
+      inicioY: y,
+      orig: { x: anotacion.x, y: anotacion.y },
+      textoActual: anotacion.texto,
+    });
+    svgRef.current.setPointerCapture(e.pointerId);
+  }
+
   function handlePointerMove(e) {
     if (nueva) {
       const { x, y } = coordsDesdeEvento(svgRef.current, e);
@@ -129,6 +184,10 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
       } else if (arrastre.modo === 'extremo2') {
         const f = flechas.find((fl) => fl.id === arrastre.id);
         coords = { x1: f.x1, y1: f.y1, x2: x, y2: y };
+      } else if (arrastre.modo === 'texto') {
+        const dx = x - arrastre.inicioX;
+        const dy = y - arrastre.inicioY;
+        coords = { x: clamp(arrastre.orig.x + dx), y: clamp(arrastre.orig.y + dy) };
       } else {
         const dx = x - arrastre.inicioX;
         const dy = y - arrastre.inicioY;
@@ -147,14 +206,29 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
     if (nueva) {
       const largo = Math.hypot(nueva.x2 - nueva.x1, nueva.y2 - nueva.y1);
       if (largo >= LARGO_MINIMO) {
-        onAgregar({ x1: nueva.x1, y1: nueva.y1, x2: nueva.x2, y2: nueva.y2, tipo: tipoSeleccionado });
+        onAgregar({ x1: nueva.x1, y1: nueva.y1, x2: nueva.x2, y2: nueva.y2, tipo: herramienta });
       }
       setNueva(null);
       return;
     }
     if (arrastre) {
-      const coords = overrides[arrastre.id];
-      if (coords) onMover(arrastre.id, coords);
+      if (arrastre.modo === 'texto') {
+        const coords = overrides[arrastre.id] ?? arrastre.orig;
+        const distancia = Math.hypot(coords.x - arrastre.orig.x, coords.y - arrastre.orig.y);
+        if (distancia > UMBRAL_CLIC_TEXTO) {
+          onMoverTexto(arrastre.id, coords);
+        } else {
+          const nuevoTexto = window.prompt('Texto de la anotación (vacío para borrar):', arrastre.textoActual ?? '');
+          if (nuevoTexto !== null) {
+            const limpio = nuevoTexto.trim().slice(0, MAX_LARGO_TEXTO);
+            if (limpio === '') onEliminarTexto(arrastre.id);
+            else if (limpio !== arrastre.textoActual) onEditarTexto(arrastre.id, limpio);
+          }
+        }
+      } else {
+        const coords = overrides[arrastre.id];
+        if (coords) onMover(arrastre.id, coords);
+      }
       setArrastre(null);
       setOverrides((prev) => {
         const resto = { ...prev };
@@ -187,7 +261,7 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
         const { x1, y1, x2, y2 } = overrides[f.id] ?? f;
         const tipo = f.tipo ?? TIPO_FLECHA_DEFAULT;
         const color = TIPOS_FLECHA[tipo].color;
-        const estaSeleccionada = f.id === seleccionada;
+        const estaSeleccionada = seleccionada?.tipo === 'flecha' && seleccionada.id === f.id;
 
         // Botón de borrar: pegado al extremo inicial, desplazado hacia un
         // costado de la flecha para no tapar la línea ni la punta.
@@ -222,7 +296,7 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
               stroke="transparent" strokeWidth={5}
               style={{ cursor: modoDibujo ? 'move' : 'pointer' }}
               onPointerDown={(e) => {
-                setSeleccionada(f.id);
+                setSeleccionada({ tipo: 'flecha', id: f.id });
                 if (modoDibujo) iniciarArrastreCuerpo(e, f);
               }}
             />
@@ -243,25 +317,70 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
             )}
 
             {estaSeleccionada && (
-              <g
-                style={{ cursor: 'pointer' }}
+              <BotonBorrar
+                x={borrarX}
+                y={borrarY}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   onEliminar(f.id);
                   setSeleccionada(null);
                 }}
-              >
-                <circle cx={borrarX} cy={borrarY} r={2} fill={COLOR_BORRAR} stroke="#fff" strokeWidth={0.3} />
-                <line x1={borrarX - 0.8} y1={borrarY - 0.8} x2={borrarX + 0.8} y2={borrarY + 0.8} stroke="#fff" strokeWidth={0.4} strokeLinecap="round" />
-                <line x1={borrarX - 0.8} y1={borrarY + 0.8} x2={borrarX + 0.8} y2={borrarY - 0.8} stroke="#fff" strokeWidth={0.4} strokeLinecap="round" />
-              </g>
+              />
+            )}
+          </g>
+        );
+      })}
+
+      {anotaciones.map((a) => {
+        const { x, y } = overrides[a.id] ?? a;
+        const estaSeleccionada = seleccionada?.tipo === 'texto' && seleccionada.id === a.id;
+        const ancho = Math.max(8, a.texto.length * 1.7 + 4);
+        const alto = 4.6;
+        const borrarX = clamp(x + ancho / 2 + 1.5);
+        const borrarY = clamp(y - alto / 2 - 1);
+
+        return (
+          <g key={a.id}>
+            {estaSeleccionada && (
+              <rect
+                x={x - ancho / 2 - 0.7} y={y - alto / 2 - 0.7} width={ancho + 1.4} height={alto + 1.4} rx={alto / 2 + 0.7}
+                fill="none" stroke="#22d3ee" strokeWidth={0.5} opacity={0.6}
+                style={{ pointerEvents: 'none' }}
+              />
+            )}
+            <rect
+              x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
+              fill="#09090b" stroke="#e4e4e7" strokeWidth={0.4}
+              style={{ pointerEvents: 'none' }}
+            />
+            <text x={x} y={y} fill="#fff" fontSize="2.6" textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
+              {a.texto}
+            </text>
+
+            <rect
+              x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
+              fill="transparent"
+              style={{ cursor: modoDibujo ? 'move' : 'pointer' }}
+              onPointerDown={(e) => iniciarInteraccionTexto(e, a)}
+            />
+
+            {estaSeleccionada && (
+              <BotonBorrar
+                x={borrarX}
+                y={borrarY}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  onEliminarTexto(a.id);
+                  setSeleccionada(null);
+                }}
+              />
             )}
           </g>
         );
       })}
 
       {nueva && (
-        <TrazoFlecha x1={nueva.x1} y1={nueva.y1} x2={nueva.x2} y2={nueva.y2} tipo={tipoSeleccionado ?? TIPO_FLECHA_DEFAULT} opacity={0.6} />
+        <TrazoFlecha x1={nueva.x1} y1={nueva.y1} x2={nueva.x2} y2={nueva.y2} tipo={herramienta ?? TIPO_FLECHA_DEFAULT} opacity={0.6} />
       )}
     </svg>
   );
