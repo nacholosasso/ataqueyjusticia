@@ -80,7 +80,7 @@ function MuestraFlecha({ tipo }) {
 // elegir/eliminar flechas y anotaciones existentes, sin crear ni arrastrar).
 function IconoMover() {
   return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
       <path d="M12 2v20M2 12h20M5 9 2 12l3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -89,7 +89,7 @@ function IconoMover() {
 // Ícono de la herramienta "Texto" (una T simple, para que se distinga de un vistazo).
 function IconoTexto() {
   return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
       <path d="M4 5h16M12 5v14" strokeLinecap="round" />
     </svg>
   );
