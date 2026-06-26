@@ -9,6 +9,7 @@ import {
   suscribirseAAnotaciones,
   agregarAnotacion,
   moverAnotacion,
+  redimensionarAnotacion,
   editarAnotacion,
   eliminarAnotacion,
   limpiarAnotaciones,
@@ -103,6 +104,17 @@ export function TacticaProvider({ children }) {
     }
   }
 
+  async function redimensionarTexto(id, escala) {
+    const actual = anotaciones.find((a) => a.id === id);
+    setAnotaciones((prev) => prev.map((a) => (a.id === id ? { ...a, escala } : a)));
+    if (actual) pushUndo({ tipo: 'texto-redimensionar', id, escalaAntes: actual.escala ?? 1 });
+    try {
+      await redimensionarAnotacion(id, escala);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function editarTexto(id, texto) {
     const actual = anotaciones.find((a) => a.id === id);
     try {
@@ -165,6 +177,10 @@ export function TacticaProvider({ children }) {
         case 'texto-editar':
           await editarAnotacion(entrada.id, entrada.textoAntes);
           break;
+        case 'texto-redimensionar':
+          setAnotaciones((prev) => prev.map((a) => (a.id === entrada.id ? { ...a, escala: entrada.escalaAntes } : a)));
+          await redimensionarAnotacion(entrada.id, entrada.escalaAntes);
+          break;
         case 'texto-eliminar':
           await agregarAnotacion(entrada.anotacion);
           break;
@@ -209,6 +225,7 @@ export function TacticaProvider({ children }) {
         eliminar,
         agregarTexto,
         moverTexto,
+        redimensionarTexto,
         editarTexto,
         eliminarTexto,
         limpiar,

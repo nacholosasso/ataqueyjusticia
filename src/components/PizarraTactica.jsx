@@ -5,9 +5,15 @@ const COLOR_BORRAR = '#dc2626';
 const LARGO_MINIMO = 4; // % - distancia mínima para crear una flecha
 const UMBRAL_CLIC_TEXTO = 1.5; // % - por debajo de esto, un gesto sobre un texto se trata como clic (editar) y no como arrastre (mover)
 const MAX_LARGO_TEXTO = 60; // mismo límite que valida firestore.rules para `anotaciones.texto`
+const ESCALA_MIN = 0.6;
+const ESCALA_MAX = 2.5;
 
 function clamp(valor) {
   return Math.min(100, Math.max(0, valor));
+}
+
+function clampEscala(valor) {
+  return Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, valor));
 }
 
 function coordsDesdeEvento(svgEl, evento) {
@@ -70,6 +76,18 @@ function BotonBorrar({ x, y, onPointerDown }) {
   );
 }
 
+// Handle de redimensionar (círculo celeste con grip diagonal), para agrandar
+// o achicar una anotación de texto arrastrándolo.
+function BotonRedimensionar({ x, y, onPointerDown }) {
+  return (
+    <g style={{ cursor: 'nwse-resize' }} onPointerDown={onPointerDown}>
+      <circle cx={x} cy={y} r={2} fill="#09090b" stroke="#22d3ee" strokeWidth={0.4} />
+      <line x1={x - 0.9} y1={y + 0.2} x2={x + 0.2} y2={y - 0.9} stroke="#22d3ee" strokeWidth={0.4} strokeLinecap="round" />
+      <line x1={x - 0.2} y1={y + 0.9} x2={x + 0.9} y2={y - 0.2} stroke="#22d3ee" strokeWidth={0.4} strokeLinecap="round" />
+    </g>
+  );
+}
+
 export default function PizarraTactica({
   flechas,
   anotaciones,
@@ -79,12 +97,14 @@ export default function PizarraTactica({
   onEliminar,
   onAgregarTexto,
   onMoverTexto,
+  onRedimensionarTexto,
   onEditarTexto,
   onEliminarTexto,
 }) {
-  // La herramienta "mover" es modo lectura: solo permite seleccionar/borrar,
-  // sin crear ni arrastrar flechas o anotaciones.
-  const editando = herramienta !== 'mover';
+  // La herramienta "mover" es modo lectura para creación: no crea flechas ni
+  // anotaciones nuevas al tocar la cancha vacía. Mover/editar lo que ya existe
+  // (flechas, anotaciones, su tamaño) funciona siempre, sin importar la herramienta.
+  const puedeCrear = herramienta !== 'mover';
   const svgRef = useRef(null);
   const [nueva, setNueva] = useState(null);
   const [arrastre, setArrastre] = useState(null);
@@ -144,7 +164,7 @@ export default function PizarraTactica({
   function handlePointerDownFondo(e) {
     if (e.target !== svgRef.current) return;
     setSeleccionada(null);
-    if (!editando) return;
+    if (!puedeCrear) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
 
     if (herramienta === 'texto') {
@@ -157,13 +177,11 @@ export default function PizarraTactica({
   }
 
   function iniciarArrastreExtremo(e, flechaId, extremo) {
-    if (!editando) return;
     setArrastre({ id: flechaId, modo: extremo });
     svgRef.current.setPointerCapture(e.pointerId);
   }
 
   function iniciarArrastreCuerpo(e, flecha) {
-    if (!editando) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
     setArrastre({
       id: flecha.id,
@@ -177,7 +195,6 @@ export default function PizarraTactica({
 
   function iniciarInteraccionTexto(e, anotacion) {
     setSeleccionada({ tipo: 'texto', id: anotacion.id });
-    if (!editando) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
     setArrastre({
       id: anotacion.id,
@@ -186,6 +203,23 @@ export default function PizarraTactica({
       inicioY: y,
       orig: { x: anotacion.x, y: anotacion.y },
       textoActual: anotacion.texto,
+    });
+    svgRef.current.setPointerCapture(e.pointerId);
+  }
+
+  // Redimensionar una anotación: la escala crece o se achica según qué tan
+  // lejos del centro del cuadro de texto se arrastra el handle, en proporción
+  // a la distancia inicial al tocarlo (arrastrar hacia afuera agranda, hacia
+  // el centro achica).
+  function iniciarRedimensionTexto(e, anotacion) {
+    const { x, y } = coordsDesdeEvento(svgRef.current, e);
+    const distInicial = Math.hypot(x - anotacion.x, y - anotacion.y) || 1;
+    setArrastre({
+      id: anotacion.id,
+      modo: 'resize-texto',
+      centro: { x: anotacion.x, y: anotacion.y },
+      distInicial,
+      escalaOrig: anotacion.escala ?? 1,
     });
     svgRef.current.setPointerCapture(e.pointerId);
   }
@@ -209,6 +243,9 @@ export default function PizarraTactica({
         const dx = x - arrastre.inicioX;
         const dy = y - arrastre.inicioY;
         coords = { x: clamp(arrastre.orig.x + dx), y: clamp(arrastre.orig.y + dy) };
+      } else if (arrastre.modo === 'resize-texto') {
+        const distActual = Math.hypot(x - arrastre.centro.x, y - arrastre.centro.y);
+        coords = { escala: clampEscala(arrastre.escalaOrig * (distActual / arrastre.distInicial)) };
       } else {
         const dx = x - arrastre.inicioX;
         const dy = y - arrastre.inicioY;
@@ -219,7 +256,7 @@ export default function PizarraTactica({
           y2: clamp(arrastre.orig.y2 + dy),
         };
       }
-      setOverrides((prev) => ({ ...prev, [arrastre.id]: coords }));
+      setOverrides((prev) => ({ ...prev, [arrastre.id]: { ...prev[arrastre.id], ...coords } }));
     }
   }
 
@@ -252,6 +289,9 @@ export default function PizarraTactica({
             original: arrastre.textoActual ?? '',
           });
         }
+      } else if (arrastre.modo === 'resize-texto') {
+        const escala = overrides[arrastre.id]?.escala;
+        if (escala != null) onRedimensionarTexto(arrastre.id, escala);
       } else {
         const coords = overrides[arrastre.id];
         if (coords) onMover(arrastre.id, coords);
@@ -271,7 +311,7 @@ export default function PizarraTactica({
         ref={svgRef}
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
-        className={`absolute inset-0 w-full h-full z-20 touch-none ${editando ? 'cursor-crosshair' : ''}`}
+        className={`absolute inset-0 w-full h-full z-20 touch-none ${puedeCrear ? 'cursor-crosshair' : ''}`}
         style={{ pointerEvents: 'auto' }}
         onPointerDown={handlePointerDownFondo}
         onPointerMove={handlePointerMove}
@@ -318,31 +358,27 @@ export default function PizarraTactica({
                 {index + 1}
               </text>
 
-              {/* Área de clic: seleccionar siempre; con una herramienta de dibujo además permite mover. */}
+              {/* Área de clic: siempre selecciona y permite mover, sin importar la herramienta activa. */}
               <line
                 x1={x1} y1={y1} x2={x2} y2={y2}
                 stroke="transparent" strokeWidth={5}
-                style={{ cursor: editando ? 'move' : 'pointer' }}
+                style={{ cursor: 'move' }}
                 onPointerDown={(e) => {
                   setSeleccionada({ tipo: 'flecha', id: f.id });
-                  if (editando) iniciarArrastreCuerpo(e, f);
+                  iniciarArrastreCuerpo(e, f);
                 }}
               />
 
-              {editando && (
-                <>
-                  <circle
-                    cx={x1} cy={y1} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
-                    style={{ cursor: 'grab' }}
-                    onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo1')}
-                  />
-                  <circle
-                    cx={x2} cy={y2} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
-                    style={{ cursor: 'grab' }}
-                    onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo2')}
-                  />
-                </>
-              )}
+              <circle
+                cx={x1} cy={y1} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
+                style={{ cursor: 'grab' }}
+                onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo1')}
+              />
+              <circle
+                cx={x2} cy={y2} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
+                style={{ cursor: 'grab' }}
+                onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo2')}
+              />
 
               {estaSeleccionada && (
                 <BotonBorrar
@@ -361,12 +397,17 @@ export default function PizarraTactica({
 
         {anotaciones.map((a) => {
           if (editor?.id === a.id) return null;
-          const { x, y } = overrides[a.id] ?? a;
+          const datos = overrides[a.id] ?? {};
+          const x = datos.x ?? a.x;
+          const y = datos.y ?? a.y;
+          const escala = clampEscala(datos.escala ?? a.escala ?? 1);
           const estaSeleccionada = seleccionada?.tipo === 'texto' && seleccionada.id === a.id;
-          const ancho = Math.max(8, a.texto.length * 1.7 + 4);
-          const alto = 4.6;
+          const ancho = Math.max(8, a.texto.length * 1.7 + 4) * escala;
+          const alto = 4.6 * escala;
           const borrarX = clamp(x + ancho / 2 + 1.5);
           const borrarY = clamp(y - alto / 2 - 1);
+          const redimensionarX = clamp(x + ancho / 2 + 1.5);
+          const redimensionarY = clamp(y + alto / 2 + 1);
 
           return (
             <g key={a.id}>
@@ -382,27 +423,37 @@ export default function PizarraTactica({
                 fill="#09090b" stroke="#e4e4e7" strokeWidth={0.4}
                 style={{ pointerEvents: 'none' }}
               />
-              <text x={x} y={y} fill="#fff" fontSize="2.6" textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
+              <text x={x} y={y} fill="#fff" fontSize={2.6 * escala} textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
                 {a.texto}
               </text>
 
               <rect
                 x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
                 fill="transparent"
-                style={{ cursor: editando ? 'move' : 'pointer' }}
+                style={{ cursor: 'move' }}
                 onPointerDown={(e) => iniciarInteraccionTexto(e, a)}
               />
 
               {estaSeleccionada && (
-                <BotonBorrar
-                  x={borrarX}
-                  y={borrarY}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    onEliminarTexto(a.id);
-                    setSeleccionada(null);
-                  }}
-                />
+                <>
+                  <BotonBorrar
+                    x={borrarX}
+                    y={borrarY}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      onEliminarTexto(a.id);
+                      setSeleccionada(null);
+                    }}
+                  />
+                  <BotonRedimensionar
+                    x={redimensionarX}
+                    y={redimensionarY}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      iniciarRedimensionTexto(e, a);
+                    }}
+                  />
+                </>
               )}
             </g>
           );

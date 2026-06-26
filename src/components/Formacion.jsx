@@ -144,6 +144,7 @@ export default function Formacion() {
     eliminar: eliminarFlecha,
     agregarTexto,
     moverTexto,
+    redimensionarTexto,
     editarTexto,
     eliminarTexto,
     limpiar: limpiarFlechas,
@@ -686,6 +687,7 @@ export default function Formacion() {
               onEliminar={eliminarFlecha}
               onAgregarTexto={agregarTexto}
               onMoverTexto={moverTexto}
+              onRedimensionarTexto={redimensionarTexto}
               onEditarTexto={editarTexto}
               onEliminarTexto={eliminarTexto}
             />
