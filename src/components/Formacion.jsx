@@ -438,15 +438,6 @@ export default function Formacion() {
         >
           Deshacer
         </button>
-        {(flechas.length > 0 || anotaciones.length > 0) && (
-          <button
-            type="button"
-            onClick={limpiarFlechas}
-            className="px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors bg-zinc-800 text-zinc-400 hover:bg-red-900 hover:text-red-300"
-          >
-            Limpiar todo
-          </button>
-        )}
         <button
           type="button"
           onClick={handleVaciarCancha}

@@ -113,8 +113,8 @@ export default function PizarraTactica({
     });
   }
 
-  // Si el elemento seleccionado se borra desde otro lado (p. ej. "Limpiar
-  // todo"), soltamos la selección para no dejar un id colgado.
+  // Si el elemento seleccionado se borra desde otro lado (p. ej. "Vaciar
+  // cancha"), soltamos la selección para no dejar un id colgado.
   useEffect(() => {
     if (!seleccionada) return;
     const existe =
