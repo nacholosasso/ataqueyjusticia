@@ -92,6 +92,11 @@ export default function PizarraTactica({
   const [seleccionada, setSeleccionada] = useState(null); // { tipo: 'flecha' | 'texto', id }
   // Edición inline de anotaciones: id null = creando una nueva en (x, y); id existente = editando esa anotación.
   const [editor, setEditor] = useState(null); // { id: string | null, x, y, valor, original }
+  // Posición tocada con la herramienta "texto", a la espera del pointerup para
+  // recién ahí abrir el editor: si el foco (y el teclado en celulares) se
+  // dispara desde el pointerdown, el navegador no lo considera un gesto de
+  // usuario "completo" y el teclado virtual no aparece.
+  const [pendienteTexto, setPendienteTexto] = useState(null);
 
   function confirmarEditor() {
     setEditor((actual) => {
@@ -143,7 +148,7 @@ export default function PizarraTactica({
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
 
     if (herramienta === 'texto') {
-      setEditor({ id: null, x, y, valor: '', original: '' });
+      setPendienteTexto({ x, y });
       return;
     }
 
@@ -219,6 +224,11 @@ export default function PizarraTactica({
   }
 
   function handlePointerUp() {
+    if (pendienteTexto) {
+      setEditor({ id: null, x: pendienteTexto.x, y: pendienteTexto.y, valor: '', original: '' });
+      setPendienteTexto(null);
+      return;
+    }
     if (nueva) {
       const largo = Math.hypot(nueva.x2 - nueva.x1, nueva.y2 - nueva.y1);
       if (largo >= LARGO_MINIMO) {
