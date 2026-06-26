@@ -73,7 +73,6 @@ function BotonBorrar({ x, y, onPointerDown }) {
 export default function PizarraTactica({
   flechas,
   anotaciones,
-  modoDibujo,
   herramienta,
   onAgregar,
   onMover,
@@ -83,11 +82,31 @@ export default function PizarraTactica({
   onEditarTexto,
   onEliminarTexto,
 }) {
+  // La herramienta "mover" es modo lectura: solo permite seleccionar/borrar,
+  // sin crear ni arrastrar flechas o anotaciones.
+  const editando = herramienta !== 'mover';
   const svgRef = useRef(null);
   const [nueva, setNueva] = useState(null);
   const [arrastre, setArrastre] = useState(null);
   const [overrides, setOverrides] = useState({});
   const [seleccionada, setSeleccionada] = useState(null); // { tipo: 'flecha' | 'texto', id }
+  // Edición inline de anotaciones: id null = creando una nueva en (x, y); id existente = editando esa anotación.
+  const [editor, setEditor] = useState(null); // { id: string | null, x, y, valor, original }
+
+  function confirmarEditor() {
+    setEditor((actual) => {
+      if (!actual) return null;
+      const limpio = actual.valor.trim().slice(0, MAX_LARGO_TEXTO);
+      if (limpio === '') {
+        if (actual.id) onEliminarTexto(actual.id);
+      } else if (actual.id === null) {
+        onAgregarTexto({ x: actual.x, y: actual.y, texto: limpio });
+      } else if (limpio !== actual.original) {
+        onEditarTexto(actual.id, limpio);
+      }
+      return null;
+    });
+  }
 
   // Si el elemento seleccionado se borra desde otro lado (p. ej. "Limpiar
   // todo"), soltamos la selección para no dejar un id colgado.
@@ -120,14 +139,11 @@ export default function PizarraTactica({
   function handlePointerDownFondo(e) {
     if (e.target !== svgRef.current) return;
     setSeleccionada(null);
-    if (!modoDibujo) return;
+    if (!editando) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
 
     if (herramienta === 'texto') {
-      const texto = window.prompt('Texto de la anotación:');
-      if (texto && texto.trim()) {
-        onAgregarTexto({ x, y, texto: texto.trim().slice(0, MAX_LARGO_TEXTO) });
-      }
+      setEditor({ id: null, x, y, valor: '', original: '' });
       return;
     }
 
@@ -136,13 +152,13 @@ export default function PizarraTactica({
   }
 
   function iniciarArrastreExtremo(e, flechaId, extremo) {
-    if (!modoDibujo) return;
+    if (!editando) return;
     setArrastre({ id: flechaId, modo: extremo });
     svgRef.current.setPointerCapture(e.pointerId);
   }
 
   function iniciarArrastreCuerpo(e, flecha) {
-    if (!modoDibujo) return;
+    if (!editando) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
     setArrastre({
       id: flecha.id,
@@ -156,7 +172,7 @@ export default function PizarraTactica({
 
   function iniciarInteraccionTexto(e, anotacion) {
     setSeleccionada({ tipo: 'texto', id: anotacion.id });
-    if (!modoDibujo) return;
+    if (!editando) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
     setArrastre({
       id: anotacion.id,
@@ -218,12 +234,13 @@ export default function PizarraTactica({
         if (distancia > UMBRAL_CLIC_TEXTO) {
           onMoverTexto(arrastre.id, coords);
         } else {
-          const nuevoTexto = window.prompt('Texto de la anotación (vacío para borrar):', arrastre.textoActual ?? '');
-          if (nuevoTexto !== null) {
-            const limpio = nuevoTexto.trim().slice(0, MAX_LARGO_TEXTO);
-            if (limpio === '') onEliminarTexto(arrastre.id);
-            else if (limpio !== arrastre.textoActual) onEditarTexto(arrastre.id, limpio);
-          }
+          setEditor({
+            id: arrastre.id,
+            x: arrastre.orig.x,
+            y: arrastre.orig.y,
+            valor: arrastre.textoActual ?? '',
+            original: arrastre.textoActual ?? '',
+          });
         }
       } else {
         const coords = overrides[arrastre.id];
@@ -239,149 +256,175 @@ export default function PizarraTactica({
   }
 
   return (
-    <svg
-      ref={svgRef}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className={`absolute inset-0 w-full h-full z-20 touch-none ${modoDibujo ? 'cursor-crosshair' : ''}`}
-      style={{ pointerEvents: 'auto' }}
-      onPointerDown={handlePointerDownFondo}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-    >
-      <defs>
-        {ORDEN_TIPOS_FLECHA.map((tipo) => (
-          <marker key={tipo} id={`punta-flecha-${tipo}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 Z" fill={TIPOS_FLECHA[tipo].color} />
-          </marker>
-        ))}
-      </defs>
+    <>
+      <svg
+        ref={svgRef}
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className={`absolute inset-0 w-full h-full z-20 touch-none ${editando ? 'cursor-crosshair' : ''}`}
+        style={{ pointerEvents: 'auto' }}
+        onPointerDown={handlePointerDownFondo}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        <defs>
+          {ORDEN_TIPOS_FLECHA.map((tipo) => (
+            <marker key={tipo} id={`punta-flecha-${tipo}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 Z" fill={TIPOS_FLECHA[tipo].color} />
+            </marker>
+          ))}
+        </defs>
 
-      {flechas.map((f, index) => {
-        const { x1, y1, x2, y2 } = overrides[f.id] ?? f;
-        const tipo = f.tipo ?? TIPO_FLECHA_DEFAULT;
-        const color = TIPOS_FLECHA[tipo].color;
-        const estaSeleccionada = seleccionada?.tipo === 'flecha' && seleccionada.id === f.id;
+        {flechas.map((f, index) => {
+          const { x1, y1, x2, y2 } = overrides[f.id] ?? f;
+          const tipo = f.tipo ?? TIPO_FLECHA_DEFAULT;
+          const color = TIPOS_FLECHA[tipo].color;
+          const estaSeleccionada = seleccionada?.tipo === 'flecha' && seleccionada.id === f.id;
 
-        // Botón de borrar: pegado al extremo inicial, desplazado hacia un
-        // costado de la flecha para no tapar la línea ni la punta.
-        const largo = Math.hypot(x2 - x1, y2 - y1) || 1;
-        const perpX = -(y2 - y1) / largo;
-        const perpY = (x2 - x1) / largo;
-        const borrarX = clamp(x1 + perpX * 3.5);
-        const borrarY = clamp(y1 + perpY * 3.5);
+          // Botón de borrar: pegado al extremo inicial, desplazado hacia un
+          // costado de la flecha para no tapar la línea ni la punta.
+          const largo = Math.hypot(x2 - x1, y2 - y1) || 1;
+          const perpX = -(y2 - y1) / largo;
+          const perpY = (x2 - x1) / largo;
+          const borrarX = clamp(x1 + perpX * 3.5);
+          const borrarY = clamp(y1 + perpY * 3.5);
 
-        const numX = (x1 + x2) / 2;
-        const numY = (y1 + y2) / 2;
+          const numX = (x1 + x2) / 2;
+          const numY = (y1 + y2) / 2;
 
-        return (
-          <g key={f.id}>
-            {estaSeleccionada && (
+          return (
+            <g key={f.id}>
+              {estaSeleccionada && (
+                <line
+                  x1={x1} y1={y1} x2={x2} y2={y2}
+                  stroke="#22d3ee" strokeWidth={2.4} strokeLinecap="round" opacity={0.45}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
+              <TrazoFlecha x1={x1} y1={y1} x2={x2} y2={y2} tipo={tipo} />
+
+              <circle cx={numX} cy={numY} r={2.2} fill="#09090b" stroke={color} strokeWidth={0.4} style={{ pointerEvents: 'none' }} />
+              <text x={numX} y={numY} fill="#fff" fontSize="2.6" textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
+                {index + 1}
+              </text>
+
+              {/* Área de clic: seleccionar siempre; con una herramienta de dibujo además permite mover. */}
               <line
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke="#22d3ee" strokeWidth={2.4} strokeLinecap="round" opacity={0.45}
-                style={{ pointerEvents: 'none' }}
-              />
-            )}
-            <TrazoFlecha x1={x1} y1={y1} x2={x2} y2={y2} tipo={tipo} />
-
-            <circle cx={numX} cy={numY} r={2.2} fill="#09090b" stroke={color} strokeWidth={0.4} style={{ pointerEvents: 'none' }} />
-            <text x={numX} y={numY} fill="#fff" fontSize="2.6" textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
-              {index + 1}
-            </text>
-
-            {/* Área de clic: seleccionar siempre; en modo dibujo además permite mover. */}
-            <line
-              x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke="transparent" strokeWidth={5}
-              style={{ cursor: modoDibujo ? 'move' : 'pointer' }}
-              onPointerDown={(e) => {
-                setSeleccionada({ tipo: 'flecha', id: f.id });
-                if (modoDibujo) iniciarArrastreCuerpo(e, f);
-              }}
-            />
-
-            {modoDibujo && (
-              <>
-                <circle
-                  cx={x1} cy={y1} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
-                  style={{ cursor: 'grab' }}
-                  onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo1')}
-                />
-                <circle
-                  cx={x2} cy={y2} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
-                  style={{ cursor: 'grab' }}
-                  onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo2')}
-                />
-              </>
-            )}
-
-            {estaSeleccionada && (
-              <BotonBorrar
-                x={borrarX}
-                y={borrarY}
+                stroke="transparent" strokeWidth={5}
+                style={{ cursor: editando ? 'move' : 'pointer' }}
                 onPointerDown={(e) => {
-                  e.stopPropagation();
-                  onEliminar(f.id);
-                  setSeleccionada(null);
+                  setSeleccionada({ tipo: 'flecha', id: f.id });
+                  if (editando) iniciarArrastreCuerpo(e, f);
                 }}
               />
-            )}
-          </g>
-        );
-      })}
 
-      {anotaciones.map((a) => {
-        const { x, y } = overrides[a.id] ?? a;
-        const estaSeleccionada = seleccionada?.tipo === 'texto' && seleccionada.id === a.id;
-        const ancho = Math.max(8, a.texto.length * 1.7 + 4);
-        const alto = 4.6;
-        const borrarX = clamp(x + ancho / 2 + 1.5);
-        const borrarY = clamp(y - alto / 2 - 1);
+              {editando && (
+                <>
+                  <circle
+                    cx={x1} cy={y1} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
+                    style={{ cursor: 'grab' }}
+                    onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo1')}
+                  />
+                  <circle
+                    cx={x2} cy={y2} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
+                    style={{ cursor: 'grab' }}
+                    onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo2')}
+                  />
+                </>
+              )}
 
-        return (
-          <g key={a.id}>
-            {estaSeleccionada && (
+              {estaSeleccionada && (
+                <BotonBorrar
+                  x={borrarX}
+                  y={borrarY}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    onEliminar(f.id);
+                    setSeleccionada(null);
+                  }}
+                />
+              )}
+            </g>
+          );
+        })}
+
+        {anotaciones.map((a) => {
+          if (editor?.id === a.id) return null;
+          const { x, y } = overrides[a.id] ?? a;
+          const estaSeleccionada = seleccionada?.tipo === 'texto' && seleccionada.id === a.id;
+          const ancho = Math.max(8, a.texto.length * 1.7 + 4);
+          const alto = 4.6;
+          const borrarX = clamp(x + ancho / 2 + 1.5);
+          const borrarY = clamp(y - alto / 2 - 1);
+
+          return (
+            <g key={a.id}>
+              {estaSeleccionada && (
+                <rect
+                  x={x - ancho / 2 - 0.7} y={y - alto / 2 - 0.7} width={ancho + 1.4} height={alto + 1.4} rx={alto / 2 + 0.7}
+                  fill="none" stroke="#22d3ee" strokeWidth={0.5} opacity={0.6}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
               <rect
-                x={x - ancho / 2 - 0.7} y={y - alto / 2 - 0.7} width={ancho + 1.4} height={alto + 1.4} rx={alto / 2 + 0.7}
-                fill="none" stroke="#22d3ee" strokeWidth={0.5} opacity={0.6}
+                x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
+                fill="#09090b" stroke="#e4e4e7" strokeWidth={0.4}
                 style={{ pointerEvents: 'none' }}
               />
-            )}
-            <rect
-              x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
-              fill="#09090b" stroke="#e4e4e7" strokeWidth={0.4}
-              style={{ pointerEvents: 'none' }}
-            />
-            <text x={x} y={y} fill="#fff" fontSize="2.6" textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
-              {a.texto}
-            </text>
+              <text x={x} y={y} fill="#fff" fontSize="2.6" textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
+                {a.texto}
+              </text>
 
-            <rect
-              x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
-              fill="transparent"
-              style={{ cursor: modoDibujo ? 'move' : 'pointer' }}
-              onPointerDown={(e) => iniciarInteraccionTexto(e, a)}
-            />
-
-            {estaSeleccionada && (
-              <BotonBorrar
-                x={borrarX}
-                y={borrarY}
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  onEliminarTexto(a.id);
-                  setSeleccionada(null);
-                }}
+              <rect
+                x={x - ancho / 2} y={y - alto / 2} width={ancho} height={alto} rx={alto / 2}
+                fill="transparent"
+                style={{ cursor: editando ? 'move' : 'pointer' }}
+                onPointerDown={(e) => iniciarInteraccionTexto(e, a)}
               />
-            )}
-          </g>
-        );
-      })}
 
-      {nueva && (
-        <TrazoFlecha x1={nueva.x1} y1={nueva.y1} x2={nueva.x2} y2={nueva.y2} tipo={herramienta ?? TIPO_FLECHA_DEFAULT} opacity={0.6} />
+              {estaSeleccionada && (
+                <BotonBorrar
+                  x={borrarX}
+                  y={borrarY}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    onEliminarTexto(a.id);
+                    setSeleccionada(null);
+                  }}
+                />
+              )}
+            </g>
+          );
+        })}
+
+        {nueva && (
+          <TrazoFlecha x1={nueva.x1} y1={nueva.y1} x2={nueva.x2} y2={nueva.y2} tipo={herramienta ?? TIPO_FLECHA_DEFAULT} opacity={0.6} />
+        )}
+      </svg>
+
+      {editor && (
+        <input
+          key={editor.id ?? 'nueva'}
+          autoFocus
+          value={editor.valor}
+          maxLength={MAX_LARGO_TEXTO}
+          placeholder="Anotación..."
+          onChange={(e) => setEditor((actual) => ({ ...actual, valor: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              confirmarEditor();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              setEditor(null);
+            }
+          }}
+          onBlur={confirmarEditor}
+          className="absolute z-30 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full text-xs text-center text-white bg-zinc-950 border border-zinc-300 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40"
+          style={{ left: `${editor.x}%`, top: `${editor.y}%`, width: `${Math.max(8, editor.valor.length + 2)}ch` }}
+        />
       )}
-    </svg>
+    </>
   );
 }

@@ -17,7 +17,7 @@ import { useTactica } from '../hooks/useTactica';
 import { useJugadas } from '../hooks/useJugadas';
 import { ROL_ESTILOS } from '../utils/posicionColores';
 import { TIPOS_FORMACION } from '../utils/formaciones';
-import { TIPOS_FLECHA, TIPO_FLECHA_DEFAULT, ORDEN_TIPOS_FLECHA } from '../utils/tipoFlecha';
+import { TIPOS_FLECHA, ORDEN_TIPOS_FLECHA } from '../utils/tipoFlecha';
 import { coordsDesdeRect, alinearConOtros } from '../utils/posiciones';
 import CartaFormacion from './CartaFormacion';
 import CartaFormacionCompacta from './CartaFormacionCompacta';
@@ -66,12 +66,31 @@ export function JugadorArrastrable({ jugador, compacta = false, modo = 'circulo'
 function MuestraFlecha({ tipo }) {
   const { color, dasharray } = TIPOS_FLECHA[tipo];
   return (
-    <svg viewBox="0 0 24 10" className="w-6 h-2.5 flex-shrink-0" aria-hidden="true">
+    <svg viewBox="0 0 24 10" className="w-8 h-3 flex-shrink-0" aria-hidden="true">
       {tipo === 'conduccion' ? (
         <path d="M1,5 Q4,1 7,5 T13,5 T19,5 T24,5" stroke={color} strokeWidth={1.5} fill="none" />
       ) : (
         <line x1="1" y1="5" x2="23" y2="5" stroke={color} strokeWidth={1.5} strokeDasharray={dasharray ?? undefined} />
       )}
+    </svg>
+  );
+}
+
+// Ícono de la herramienta "Mover" (de-selecciona el dibujo: solo permite
+// elegir/eliminar flechas y anotaciones existentes, sin crear ni arrastrar).
+function IconoMover() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+      <path d="M12 2v20M2 12h20M5 9 2 12l3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Ícono de la herramienta "Texto" (una T simple, para que se distinga de un vistazo).
+function IconoTexto() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path d="M4 5h16M12 5v14" strokeLinecap="round" />
     </svg>
   );
 }
@@ -136,10 +155,9 @@ export default function Formacion() {
   const [pelotaActiva, setPelotaActiva] = useState(false);
   const [rivalActivo, setRivalActivo] = useState(null);
   const [arrastrandoId, setArrastrandoId] = useState(null);
-  const [modoDibujo, setModoDibujo] = useState(false);
   const [modosJugador, setModosJugador] = useState({});
   const [modosRival, setModosRival] = useState({});
-  const [herramienta, setHerramienta] = useState(TIPO_FLECHA_DEFAULT);
+  const [herramienta, setHerramienta] = useState('mover');
   const [bancaAbierta, setBancaAbierta] = useState(true);
   const [mostrarGuardarJugada, setMostrarGuardarJugada] = useState(false);
   const [nombreJugada, setNombreJugada] = useState('');
@@ -353,48 +371,49 @@ export default function Formacion() {
         ))}
       </div>
 
-      <div className="flex justify-center flex-wrap gap-2 mb-6">
+      <div className="flex justify-center flex-wrap gap-2 mb-3">
         <button
           type="button"
-          onClick={() => setModoDibujo((v) => !v)}
-          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
-            modoDibujo
-              ? 'bg-cyan-400 text-zinc-900'
+          onClick={() => setHerramienta('mover')}
+          className={`px-4 py-2 rounded-full text-sm font-bold tracking-wider transition-colors flex items-center gap-2 ${
+            herramienta === 'mover'
+              ? 'bg-zinc-800 text-amber-400 ring-2 ring-amber-400'
               : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
           }`}
         >
-          Dibujar flechas
+          <IconoMover />
+          Mover
         </button>
-        {modoDibujo &&
-          ORDEN_TIPOS_FLECHA.map((tipo) => (
-            <button
-              key={tipo}
-              type="button"
-              onClick={() => setHerramienta(tipo)}
-              className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors flex items-center gap-1.5 ${
-                tipo === herramienta
-                  ? 'bg-white text-zinc-900'
-                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-              }`}
-              style={tipo === herramienta ? { boxShadow: `inset 0 0 0 2px ${TIPOS_FLECHA[tipo].color}` } : undefined}
-            >
-              <MuestraFlecha tipo={tipo} />
-              {TIPOS_FLECHA[tipo].etiqueta}
-            </button>
-          ))}
-        {modoDibujo && (
+        {ORDEN_TIPOS_FLECHA.map((tipo) => (
           <button
+            key={tipo}
             type="button"
-            onClick={() => setHerramienta('texto')}
-            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
-              herramienta === 'texto'
-                ? 'bg-white text-zinc-900'
+            onClick={() => setHerramienta(tipo)}
+            className={`px-4 py-2 rounded-full text-sm font-bold tracking-wider transition-colors flex items-center gap-2 ${
+              tipo === herramienta
+                ? 'bg-zinc-800 text-amber-400 ring-2 ring-amber-400'
                 : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
             }`}
           >
-            Texto
+            <MuestraFlecha tipo={tipo} />
+            {TIPOS_FLECHA[tipo].etiqueta}
           </button>
-        )}
+        ))}
+        <button
+          type="button"
+          onClick={() => setHerramienta('texto')}
+          className={`px-4 py-2 rounded-full text-sm font-bold tracking-wider transition-colors flex items-center gap-2 ${
+            herramienta === 'texto'
+              ? 'bg-zinc-800 text-amber-400 ring-2 ring-amber-400'
+              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+          }`}
+        >
+          <IconoTexto />
+          Texto
+        </button>
+      </div>
+
+      <div className="flex justify-center flex-wrap gap-2 mb-6">
         <button
           type="button"
           onClick={agregarRival}
@@ -471,20 +490,8 @@ export default function Formacion() {
         </button>
       </div>
 
-      {/* Leyenda de flechas y panel de pizarras: ocultos en pantalla completa
+      {/* Panel de pizarras: oculto en pantalla completa
           para que la cancha aproveche ese alto liberado. */}
-      {!pantallaCompleta && (
-      <div className="flex justify-center flex-wrap items-center gap-x-4 gap-y-1.5 mb-6">
-        {ORDEN_TIPOS_FLECHA.map((tipo) => (
-          <div key={tipo} className="flex items-center gap-1.5">
-            <MuestraFlecha tipo={tipo} />
-            <span className="text-zinc-500 text-xs">{TIPOS_FLECHA[tipo].etiqueta}</span>
-          </div>
-        ))}
-        <span className="text-zinc-500 text-xs">①②③ → orden de los movimientos de la jugada</span>
-      </div>
-      )}
-
       {!pantallaCompleta && (
       <div className="flex justify-center flex-wrap items-center gap-2 mb-6">
         <span className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em] mr-1">
@@ -678,11 +685,10 @@ export default function Formacion() {
               fichaAlFrente={zTop}
             />
 
-            {/* Pizarra táctica: flechas y anotaciones (lectura siempre, edición en modo dibujo) */}
+            {/* Pizarra táctica: flechas y anotaciones (lectura siempre, edición salvo con la herramienta "Mover") */}
             <PizarraTactica
               flechas={flechas}
               anotaciones={anotaciones}
-              modoDibujo={modoDibujo}
               herramienta={herramienta}
               onAgregar={agregarFlecha}
               onMover={moverFlecha}
