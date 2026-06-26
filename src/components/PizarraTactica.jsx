@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TIPOS_FLECHA, TIPO_FLECHA_DEFAULT, ORDEN_TIPOS_FLECHA } from '../utils/tipoFlecha';
 
 const COLOR_BORRAR = '#dc2626';
@@ -62,9 +62,34 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
   const [nueva, setNueva] = useState(null);
   const [arrastre, setArrastre] = useState(null);
   const [overrides, setOverrides] = useState({});
+  const [seleccionada, setSeleccionada] = useState(null);
+
+  // Si la flecha seleccionada se borra desde otro lado (p. ej. "Limpiar
+  // todo"), soltamos la selección para no dejar un id colgado.
+  useEffect(() => {
+    if (seleccionada && !flechas.some((f) => f.id === seleccionada)) setSeleccionada(null);
+  }, [flechas, seleccionada]);
+
+  // Tecla Supr/Backspace borra la flecha seleccionada, salvo que el foco
+  // esté en un campo de texto (chat, nombre de pizarra, etc.).
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (!seleccionada) return;
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+      e.preventDefault();
+      onEliminar(seleccionada);
+      setSeleccionada(null);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [seleccionada, onEliminar]);
 
   function handlePointerDownFondo(e) {
-    if (!modoDibujo || e.target !== svgRef.current) return;
+    if (e.target !== svgRef.current) return;
+    setSeleccionada(null);
+    if (!modoDibujo) return;
     const { x, y } = coordsDesdeEvento(svgRef.current, e);
     setNueva({ x1: x, y1: y, x2: x, y2: y });
     svgRef.current.setPointerCapture(e.pointerId);
@@ -145,7 +170,7 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       className={`absolute inset-0 w-full h-full z-20 touch-none ${modoDibujo ? 'cursor-crosshair' : ''}`}
-      style={{ pointerEvents: modoDibujo ? 'auto' : 'none' }}
+      style={{ pointerEvents: 'auto' }}
       onPointerDown={handlePointerDownFondo}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -162,6 +187,7 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
         const { x1, y1, x2, y2 } = overrides[f.id] ?? f;
         const tipo = f.tipo ?? TIPO_FLECHA_DEFAULT;
         const color = TIPOS_FLECHA[tipo].color;
+        const estaSeleccionada = f.id === seleccionada;
 
         // Botón de borrar: pegado al extremo inicial, desplazado hacia un
         // costado de la flecha para no tapar la línea ni la punta.
@@ -175,7 +201,14 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
         const numY = (y1 + y2) / 2;
 
         return (
-          <g key={f.id} className="group">
+          <g key={f.id}>
+            {estaSeleccionada && (
+              <line
+                x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke="#22d3ee" strokeWidth={2.4} strokeLinecap="round" opacity={0.45}
+                style={{ pointerEvents: 'none' }}
+              />
+            )}
             <TrazoFlecha x1={x1} y1={y1} x2={x2} y2={y2} tipo={tipo} />
 
             <circle cx={numX} cy={numY} r={2.2} fill="#09090b" stroke={color} strokeWidth={0.4} style={{ pointerEvents: 'none' }} />
@@ -183,14 +216,19 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
               {index + 1}
             </text>
 
+            {/* Área de clic: seleccionar siempre; en modo dibujo además permite mover. */}
+            <line
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke="transparent" strokeWidth={5}
+              style={{ cursor: modoDibujo ? 'move' : 'pointer' }}
+              onPointerDown={(e) => {
+                setSeleccionada(f.id);
+                if (modoDibujo) iniciarArrastreCuerpo(e, f);
+              }}
+            />
+
             {modoDibujo && (
               <>
-                <line
-                  x1={x1} y1={y1} x2={x2} y2={y2}
-                  stroke="transparent" strokeWidth={5}
-                  style={{ cursor: 'move' }}
-                  onPointerDown={(e) => iniciarArrastreCuerpo(e, f)}
-                />
                 <circle
                   cx={x1} cy={y1} r={1.8} fill="#fff" stroke={color} strokeWidth={0.5}
                   style={{ cursor: 'grab' }}
@@ -201,16 +239,22 @@ export default function PizarraTactica({ flechas, modoDibujo, tipoSeleccionado, 
                   style={{ cursor: 'grab' }}
                   onPointerDown={(e) => iniciarArrastreExtremo(e, f.id, 'extremo2')}
                 />
-                <g
-                  className="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
-                  style={{ cursor: 'pointer' }}
-                  onPointerDown={(e) => { e.stopPropagation(); onEliminar(f.id); }}
-                >
-                  <circle cx={borrarX} cy={borrarY} r={1.2} fill={COLOR_BORRAR} stroke="#fff" strokeWidth={0.25} />
-                  <line x1={borrarX - 0.5} y1={borrarY - 0.5} x2={borrarX + 0.5} y2={borrarY + 0.5} stroke="#fff" strokeWidth={0.3} />
-                  <line x1={borrarX - 0.5} y1={borrarY + 0.5} x2={borrarX + 0.5} y2={borrarY - 0.5} stroke="#fff" strokeWidth={0.3} />
-                </g>
               </>
+            )}
+
+            {estaSeleccionada && (
+              <g
+                style={{ cursor: 'pointer' }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  onEliminar(f.id);
+                  setSeleccionada(null);
+                }}
+              >
+                <circle cx={borrarX} cy={borrarY} r={2} fill={COLOR_BORRAR} stroke="#fff" strokeWidth={0.3} />
+                <line x1={borrarX - 0.8} y1={borrarY - 0.8} x2={borrarX + 0.8} y2={borrarY + 0.8} stroke="#fff" strokeWidth={0.4} strokeLinecap="round" />
+                <line x1={borrarX - 0.8} y1={borrarY + 0.8} x2={borrarX + 0.8} y2={borrarY - 0.8} stroke="#fff" strokeWidth={0.4} strokeLinecap="round" />
+              </g>
             )}
           </g>
         );
