@@ -61,7 +61,7 @@ service cloud.firestore {
     match /anotaciones/{anotacionId} {
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['x', 'y', 'texto', 'creado', 'escala'])
+      allow create: if request.resource.data.keys().hasOnly(['x', 'y', 'texto', 'creado', 'escala', 'color'])
         && request.resource.data.x is number && request.resource.data.x >= 0 && request.resource.data.x <= 100
         && request.resource.data.y is number && request.resource.data.y >= 0 && request.resource.data.y <= 100
         && request.resource.data.texto is string
@@ -69,9 +69,12 @@ service cloud.firestore {
         && request.resource.data.creado == request.time
         && (!('escala' in request.resource.data)
             || (request.resource.data.escala is number
-                && request.resource.data.escala >= 0.6 && request.resource.data.escala <= 2.5));
+                && request.resource.data.escala >= 0.6 && request.resource.data.escala <= 2.5))
+        && (!('color' in request.resource.data)
+            || (request.resource.data.color is string
+                && request.resource.data.color in ['#ffffff', '#22d3ee', '#a78bfa', '#fbbf24', '#4ade80']));
 
-      allow update: if request.resource.data.keys().hasOnly(['x', 'y', 'texto', 'creado', 'escala'])
+      allow update: if request.resource.data.keys().hasOnly(['x', 'y', 'texto', 'creado', 'escala', 'color'])
         && request.resource.data.x is number && request.resource.data.x >= 0 && request.resource.data.x <= 100
         && request.resource.data.y is number && request.resource.data.y >= 0 && request.resource.data.y <= 100
         && request.resource.data.texto is string
@@ -79,7 +82,10 @@ service cloud.firestore {
         && request.resource.data.creado == resource.data.creado
         && (!('escala' in request.resource.data)
             || (request.resource.data.escala is number
-                && request.resource.data.escala >= 0.6 && request.resource.data.escala <= 2.5));
+                && request.resource.data.escala >= 0.6 && request.resource.data.escala <= 2.5))
+        && (!('color' in request.resource.data)
+            || (request.resource.data.color is string
+                && request.resource.data.color in ['#ffffff', '#22d3ee', '#a78bfa', '#fbbf24', '#4ade80']));
 
       allow delete: if true;
     }

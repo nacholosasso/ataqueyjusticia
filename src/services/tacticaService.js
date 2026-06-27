@@ -69,8 +69,8 @@ export async function redimensionarAnotacion(id, escala) {
   await updateDoc(doc(db, 'anotaciones', id), { escala });
 }
 
-export async function editarAnotacion(id, texto) {
-  await updateDoc(doc(db, 'anotaciones', id), { texto });
+export async function editarAnotacion(id, cambios) {
+  await updateDoc(doc(db, 'anotaciones', id), cambios);
 }
 
 export async function eliminarAnotacion(id) {

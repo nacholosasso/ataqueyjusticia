@@ -7,6 +7,7 @@ const UMBRAL_CLIC_TEXTO = 1.5; // % - por debajo de esto, un gesto sobre un text
 const MAX_LARGO_TEXTO = 60; // mismo límite que valida firestore.rules para `anotaciones.texto`
 const ESCALA_MIN = 0.6;
 const ESCALA_MAX = 2.5;
+const COLORES_TEXTO = ['#ffffff', '#22d3ee', '#a78bfa', '#fbbf24', '#4ade80']; // misma whitelist que firestore.rules para `anotaciones.color`
 
 function clamp(valor) {
   return Math.min(100, Math.max(0, valor));
@@ -125,9 +126,9 @@ export default function PizarraTactica({
       if (limpio === '') {
         if (actual.id) onEliminarTexto(actual.id);
       } else if (actual.id === null) {
-        onAgregarTexto({ x: actual.x, y: actual.y, texto: limpio });
-      } else if (limpio !== actual.original) {
-        onEditarTexto(actual.id, limpio);
+        onAgregarTexto({ x: actual.x, y: actual.y, texto: limpio, color: actual.color });
+      } else if (limpio !== actual.original || actual.color !== actual.colorOriginal) {
+        onEditarTexto(actual.id, { texto: limpio, color: actual.color });
       }
       return null;
     });
@@ -203,6 +204,7 @@ export default function PizarraTactica({
       inicioY: y,
       orig: { x: anotacion.x, y: anotacion.y },
       textoActual: anotacion.texto,
+      colorActual: anotacion.color ?? COLORES_TEXTO[0],
     });
     svgRef.current.setPointerCapture(e.pointerId);
   }
@@ -262,7 +264,15 @@ export default function PizarraTactica({
 
   function handlePointerUp() {
     if (pendienteTexto) {
-      setEditor({ id: null, x: pendienteTexto.x, y: pendienteTexto.y, valor: '', original: '' });
+      setEditor({
+        id: null,
+        x: pendienteTexto.x,
+        y: pendienteTexto.y,
+        valor: '',
+        original: '',
+        color: COLORES_TEXTO[0],
+        colorOriginal: COLORES_TEXTO[0],
+      });
       setPendienteTexto(null);
       return;
     }
@@ -287,6 +297,8 @@ export default function PizarraTactica({
             y: arrastre.orig.y,
             valor: arrastre.textoActual ?? '',
             original: arrastre.textoActual ?? '',
+            color: arrastre.colorActual ?? COLORES_TEXTO[0],
+            colorOriginal: arrastre.colorActual ?? COLORES_TEXTO[0],
           });
         }
       } else if (arrastre.modo === 'resize-texto') {
@@ -423,7 +435,7 @@ export default function PizarraTactica({
                 fill="#09090b" stroke="#e4e4e7" strokeWidth={0.4}
                 style={{ pointerEvents: 'none' }}
               />
-              <text x={x} y={y} fill="#fff" fontSize={2.6 * escala} textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
+              <text x={x} y={y} fill={a.color ?? '#fff'} fontSize={2.6 * escala} textAnchor="middle" dominantBaseline="central" className="font-display" style={{ pointerEvents: 'none' }}>
                 {a.texto}
               </text>
 
@@ -465,26 +477,45 @@ export default function PizarraTactica({
       </svg>
 
       {editor && (
-        <input
-          key={editor.id ?? 'nueva'}
-          autoFocus
-          value={editor.valor}
-          maxLength={MAX_LARGO_TEXTO}
-          placeholder="Anotación..."
-          onChange={(e) => setEditor((actual) => ({ ...actual, valor: e.target.value }))}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              confirmarEditor();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              setEditor(null);
-            }
-          }}
-          onBlur={confirmarEditor}
-          className="absolute z-30 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full text-xs text-center text-white bg-zinc-950 border border-zinc-300 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40"
-          style={{ left: `${editor.x}%`, top: `${editor.y}%`, width: `${Math.max(8, editor.valor.length + 2)}ch` }}
-        />
+        <div
+          className="absolute z-30 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1.5"
+          style={{ left: `${editor.x}%`, top: `${editor.y}%` }}
+        >
+          <input
+            key={editor.id ?? 'nueva'}
+            autoFocus
+            value={editor.valor}
+            maxLength={MAX_LARGO_TEXTO}
+            placeholder="Anotación..."
+            onChange={(e) => setEditor((actual) => ({ ...actual, valor: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmarEditor();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setEditor(null);
+              }
+            }}
+            onBlur={confirmarEditor}
+            className="px-2 py-0.5 rounded-full text-xs text-center bg-zinc-950 border border-zinc-300 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40"
+            style={{ width: `${Math.max(8, editor.valor.length + 2)}ch`, color: editor.color }}
+          />
+          <div className="flex gap-1 px-1.5 py-1 rounded-full bg-zinc-950 border border-zinc-700">
+            {COLORES_TEXTO.map((c) => (
+              <button
+                key={c}
+                type="button"
+                // evita que el botón le robe el foco al input: si lo perdiera, el onBlur
+                // dispararía confirmarEditor() y cerraría el editor antes de registrar el clic
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => setEditor((actual) => (actual ? { ...actual, color: c } : actual))}
+                className={`w-3.5 h-3.5 rounded-full border-2 ${editor.color === c ? 'border-white' : 'border-transparent'}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </div>
       )}
     </>
   );

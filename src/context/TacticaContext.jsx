@@ -115,10 +115,10 @@ export function TacticaProvider({ children }) {
     }
   }
 
-  async function editarTexto(id, texto) {
+  async function editarTexto(id, cambios) {
     const actual = anotaciones.find((a) => a.id === id);
     try {
-      await editarAnotacion(id, texto);
+      await editarAnotacion(id, cambios);
       if (actual) pushUndo({ tipo: 'texto-editar', id, textoAntes: actual.texto });
     } catch (err) {
       setError(err.message);
@@ -175,7 +175,7 @@ export function TacticaProvider({ children }) {
           await moverAnotacion(entrada.id, entrada.antes);
           break;
         case 'texto-editar':
-          await editarAnotacion(entrada.id, entrada.textoAntes);
+          await editarAnotacion(entrada.id, { texto: entrada.textoAntes });
           break;
         case 'texto-redimensionar':
           setAnotaciones((prev) => prev.map((a) => (a.id === entrada.id ? { ...a, escala: entrada.escalaAntes } : a)));
