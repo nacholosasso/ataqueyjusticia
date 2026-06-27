@@ -356,7 +356,7 @@ export default function Formacion() {
         ref={tableroRef}
         className={
           pantallaCompleta
-            ? 'fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center gap-4 p-4 overflow-y-auto'
+            ? 'fixed inset-0 z-50 bg-zinc-950 flex flex-col justify-center gap-4 p-4 overflow-y-auto'
             : undefined
         }
       >
