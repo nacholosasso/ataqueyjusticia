@@ -4,7 +4,7 @@ Este archivo da guía a Claude Code (claude.ai/code) para trabajar en este repos
 
 ## Resumen del proyecto
 
-Aplicación web del equipo de fútbol "Ataque y Justicia": muestra el plantel ("Plantel") como cartas de jugador estilo FIFA, y una pizarra táctica compartida donde se puede ubicar al plantel en una cancha de fútbol 8, moverlos por drag-and-drop, dibujar flechas, y charlar por un chat en vivo. Los textos de la interfaz están en español (Argentina).
+Aplicación web del equipo de fútbol "Ataque y Justicia": muestra el plantel ("Plantel") como cartas de jugador estilo FIFA, y una pizarra táctica compartida que use un DT donde se puede ubicar al plantel en una cancha de fútbol 8, moverlos por drag-and-drop, dibujar flechas, y charlar por un chat en vivo. Los textos de la interfaz están en español (Argentina).
 
 Stack: React 18 + Vite, Tailwind CSS, `@dnd-kit` para drag-and-drop, Firebase Firestore para estado compartido en tiempo real, y la API de Google Sheets como fuente de solo lectura del plantel. Se hostea en Firebase Hosting.
 
@@ -74,8 +74,4 @@ Tailwind, tema oscuro (base zinc-950), fuente "Bebas Neue" para encabezados/rati
 
 ## Cómo trabajar
 
-- Cambios que toquen FormacionContext, los services o las reglas de Firestore:
-  usá modo plan, mostrame el enfoque y esperá mi OK antes de codear.
-- Features grandes: trabajá por fases y frená para que revise cada una.
-- Si la forma de los datos en Firestore es ambigua, preguntá antes de escribir.
 - Mantené el estilo visual actual (cartas FIFA, tema oscuro).

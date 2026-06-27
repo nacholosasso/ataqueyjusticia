@@ -602,7 +602,7 @@ export default function Formacion() {
             ref={canchaRef}
             className={`relative rounded-2xl overflow-hidden border border-zinc-700/40 aspect-[3/4] shadow-[inset_0_0_60px_rgba(0,0,0,0.5)] ${
               pantallaCompleta
-                ? 'max-h-[85vh] max-w-full w-auto h-auto'
+                ? 'w-[min(100%,63.75vh)]'
                 : `w-full sm:flex-1 ${
                     bancaAbierta
                       ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
