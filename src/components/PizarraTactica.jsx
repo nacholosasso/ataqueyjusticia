@@ -7,6 +7,7 @@ const UMBRAL_CLIC_TEXTO = 1.5; // % - por debajo de esto, un gesto sobre un text
 const MAX_LARGO_TEXTO = 60; // mismo límite que valida firestore.rules para `anotaciones.texto`
 const ESCALA_MIN = 0.6;
 const ESCALA_MAX = 2.5;
+const PASO_ESCALA = 0.2; // cuánto cambia la escala por cada toque de los botones +/-
 const COLORES_TEXTO = ['#ffffff', '#22d3ee', '#a78bfa', '#fbbf24', '#4ade80']; // misma whitelist que firestore.rules para `anotaciones.color`
 
 function clamp(valor) {
@@ -77,14 +78,16 @@ function BotonBorrar({ x, y, onPointerDown }) {
   );
 }
 
-// Handle de redimensionar (círculo celeste con grip diagonal), para agrandar
-// o achicar una anotación de texto arrastrándolo.
-function BotonRedimensionar({ x, y, onPointerDown }) {
+// Botón de ajustar tamaño (círculo celeste con + o -), para agrandar o achicar
+// una anotación de texto en pasos fijos.
+function BotonEscala({ x, y, simbolo, onPointerDown }) {
   return (
-    <g style={{ cursor: 'nwse-resize' }} onPointerDown={onPointerDown}>
+    <g style={{ cursor: 'pointer' }} onPointerDown={onPointerDown}>
       <circle cx={x} cy={y} r={2} fill="#09090b" stroke="#22d3ee" strokeWidth={0.4} />
-      <line x1={x - 0.9} y1={y + 0.2} x2={x + 0.2} y2={y - 0.9} stroke="#22d3ee" strokeWidth={0.4} strokeLinecap="round" />
-      <line x1={x - 0.2} y1={y + 0.9} x2={x + 0.9} y2={y - 0.2} stroke="#22d3ee" strokeWidth={0.4} strokeLinecap="round" />
+      <line x1={x - 0.9} y1={y} x2={x + 0.9} y2={y} stroke="#22d3ee" strokeWidth={0.4} strokeLinecap="round" />
+      {simbolo === '+' && (
+        <line x1={x} y1={y - 0.9} x2={x} y2={y + 0.9} stroke="#22d3ee" strokeWidth={0.4} strokeLinecap="round" />
+      )}
     </g>
   );
 }
@@ -209,23 +212,6 @@ export default function PizarraTactica({
     svgRef.current.setPointerCapture(e.pointerId);
   }
 
-  // Redimensionar una anotación: la escala crece o se achica según qué tan
-  // lejos del centro del cuadro de texto se arrastra el handle, en proporción
-  // a la distancia inicial al tocarlo (arrastrar hacia afuera agranda, hacia
-  // el centro achica).
-  function iniciarRedimensionTexto(e, anotacion) {
-    const { x, y } = coordsDesdeEvento(svgRef.current, e);
-    const distInicial = Math.hypot(x - anotacion.x, y - anotacion.y) || 1;
-    setArrastre({
-      id: anotacion.id,
-      modo: 'resize-texto',
-      centro: { x: anotacion.x, y: anotacion.y },
-      distInicial,
-      escalaOrig: anotacion.escala ?? 1,
-    });
-    svgRef.current.setPointerCapture(e.pointerId);
-  }
-
   function handlePointerMove(e) {
     if (nueva) {
       const { x, y } = coordsDesdeEvento(svgRef.current, e);
@@ -245,9 +231,6 @@ export default function PizarraTactica({
         const dx = x - arrastre.inicioX;
         const dy = y - arrastre.inicioY;
         coords = { x: clamp(arrastre.orig.x + dx), y: clamp(arrastre.orig.y + dy) };
-      } else if (arrastre.modo === 'resize-texto') {
-        const distActual = Math.hypot(x - arrastre.centro.x, y - arrastre.centro.y);
-        coords = { escala: clampEscala(arrastre.escalaOrig * (distActual / arrastre.distInicial)) };
       } else {
         const dx = x - arrastre.inicioX;
         const dy = y - arrastre.inicioY;
@@ -301,9 +284,6 @@ export default function PizarraTactica({
             colorOriginal: arrastre.colorActual ?? COLORES_TEXTO[0],
           });
         }
-      } else if (arrastre.modo === 'resize-texto') {
-        const escala = overrides[arrastre.id]?.escala;
-        if (escala != null) onRedimensionarTexto(arrastre.id, escala);
       } else {
         const coords = overrides[arrastre.id];
         if (coords) onMover(arrastre.id, coords);
@@ -412,14 +392,15 @@ export default function PizarraTactica({
           const datos = overrides[a.id] ?? {};
           const x = datos.x ?? a.x;
           const y = datos.y ?? a.y;
-          const escala = clampEscala(datos.escala ?? a.escala ?? 1);
+          const escala = clampEscala(a.escala ?? 1);
           const estaSeleccionada = seleccionada?.tipo === 'texto' && seleccionada.id === a.id;
           const ancho = Math.max(8, a.texto.length * 1.7 + 4) * escala;
           const alto = 4.6 * escala;
           const borrarX = clamp(x + ancho / 2 + 1.5);
           const borrarY = clamp(y - alto / 2 - 1);
-          const redimensionarX = clamp(x + ancho / 2 + 1.5);
-          const redimensionarY = clamp(y + alto / 2 + 1);
+          const escalaY = clamp(y + alto / 2 + 2.2);
+          const achicarX = clamp(x - 2.4);
+          const agrandarX = clamp(x + 2.4);
 
           return (
             <g key={a.id}>
@@ -457,12 +438,22 @@ export default function PizarraTactica({
                       setSeleccionada(null);
                     }}
                   />
-                  <BotonRedimensionar
-                    x={redimensionarX}
-                    y={redimensionarY}
+                  <BotonEscala
+                    x={achicarX}
+                    y={escalaY}
+                    simbolo="-"
                     onPointerDown={(e) => {
                       e.stopPropagation();
-                      iniciarRedimensionTexto(e, a);
+                      onRedimensionarTexto(a.id, clampEscala(escala - PASO_ESCALA));
+                    }}
+                  />
+                  <BotonEscala
+                    x={agrandarX}
+                    y={escalaY}
+                    simbolo="+"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      onRedimensionarTexto(a.id, clampEscala(escala + PASO_ESCALA));
                     }}
                   />
                 </>
