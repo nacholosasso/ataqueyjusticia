@@ -54,8 +54,11 @@ export async function cargarJugada(tablero) {
   flechas.forEach(({ x1, y1, x2, y2, tipo: tipoFlecha }) => {
     batch.set(doc(FLECHAS_REF), { x1, y1, x2, y2, tipo: tipoFlecha, creado: serverTimestamp() });
   });
-  anotaciones.forEach(({ x, y, texto }) => {
-    batch.set(doc(ANOTACIONES_REF), { x, y, texto, creado: serverTimestamp() });
+  anotaciones.forEach(({ x, y, texto, color, escala }) => {
+    const datos = { x, y, texto, creado: serverTimestamp() };
+    if (color !== undefined) datos.color = color;
+    if (escala !== undefined) datos.escala = escala;
+    batch.set(doc(ANOTACIONES_REF), datos);
   });
   await batch.commit();
 }

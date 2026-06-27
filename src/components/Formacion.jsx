@@ -216,7 +216,12 @@ export default function Formacion() {
       pelota,
       rivales,
       flechas: flechas.map(({ x1, y1, x2, y2, tipo: tipoFlechaGuardada }) => ({ x1, y1, x2, y2, tipo: tipoFlechaGuardada })),
-      anotaciones: anotaciones.map(({ x, y, texto }) => ({ x, y, texto })),
+      anotaciones: anotaciones.map(({ x, y, texto, color, escala }) => {
+        const guardada = { x, y, texto };
+        if (color !== undefined) guardada.color = color;
+        if (escala !== undefined) guardada.escala = escala;
+        return guardada;
+      }),
     };
   }
 
