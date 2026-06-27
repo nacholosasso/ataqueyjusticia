@@ -311,7 +311,7 @@ export default function PizarraTactica({
         ref={svgRef}
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
-        className={`absolute inset-0 w-full h-full z-20 touch-none ${puedeCrear ? 'cursor-crosshair' : ''}`}
+        className={`absolute inset-0 w-full h-full z-0 touch-none ${puedeCrear ? 'cursor-crosshair' : ''}`}
         style={{ pointerEvents: 'auto' }}
         onPointerDown={handlePointerDownFondo}
         onPointerMove={handlePointerMove}
