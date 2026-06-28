@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { JugadorArrastrable } from './Formacion';
 import { zIndexFicha } from '../utils/zIndexFicha';
+import { modeloAPantalla } from '../utils/posiciones';
 
 function JugadorEnCancha({ jugador, x, y, modo, onCambiarModo, zIndex }) {
   const { setNodeRef, isOver } = useDroppable({ id: jugador.id });
@@ -16,14 +17,15 @@ function JugadorEnCancha({ jugador, x, y, modo, onCambiarModo, zIndex }) {
   );
 }
 
-export default function JugadoresCancha({ posiciones, buscarJugador, modosJugador, onCambiarModo, arrastrandoId, fichaAlFrente }) {
+export default function JugadoresCancha({ posiciones, buscarJugador, modosJugador, onCambiarModo, arrastrandoId, fichaAlFrente, orientacion }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'cancha' });
 
   return (
     <div ref={setNodeRef} className={`absolute inset-0 ${isOver ? 'bg-white/5' : ''}`}>
-      {Object.entries(posiciones).map(([jugadorId, { x, y }]) => {
+      {Object.entries(posiciones).map(([jugadorId, posModelo]) => {
         const jugador = buscarJugador(jugadorId);
         if (!jugador) return null;
+        const { x, y } = modeloAPantalla(posModelo, orientacion);
         return (
           <JugadorEnCancha
             key={jugadorId}

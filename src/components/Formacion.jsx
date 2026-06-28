@@ -18,7 +18,7 @@ import { useJugadas } from '../hooks/useJugadas';
 import { ROL_ESTILOS } from '../utils/posicionColores';
 import { TIPOS_FORMACION } from '../utils/formaciones';
 import { TIPOS_FLECHA, ORDEN_TIPOS_FLECHA } from '../utils/tipoFlecha';
-import { coordsDesdeRect, alinearConOtros } from '../utils/posiciones';
+import { coordsDesdeRect, alinearConOtros, pantallaAModelo } from '../utils/posiciones';
 import CartaFormacion from './CartaFormacion';
 import CartaFormacionCompacta from './CartaFormacionCompacta';
 import { CartaCirculo, CartaRivalCirculo } from './CartaCirculo';
@@ -32,6 +32,7 @@ import Chat from './Chat';
 const MAX_RIVALES = 8;
 const ORDEN_MODOS_JUGADOR = ['circulo', 'fifa', 'stats'];
 const ORDEN_MODOS_RIVAL = ['circulo', 'fifa'];
+const ORIENTACION_KEY = 'ayj_orientacion_cancha';
 
 function siguienteModo(ordenModos, actual) {
   const idx = ordenModos.indexOf(actual);
@@ -92,6 +93,90 @@ function IconoTexto() {
     <svg viewBox="0 0 24 24" className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
       <path d="M4 5h16M12 5v14" strokeLinecap="round" />
     </svg>
+  );
+}
+
+// Líneas de cancha (fútbol 8), orientación vertical: arco propio abajo,
+// arco rival arriba.
+function LineasCanchaVertical() {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-4 sm:inset-5 border-2 border-white/15 rounded-sm">
+
+        {/* Arcos de esquina */}
+        <div className="absolute -top-px -left-px w-3 h-3 sm:w-4 sm:h-4 border-r-2 border-b-2 border-white/15 rounded-br-full" />
+        <div className="absolute -top-px -right-px w-3 h-3 sm:w-4 sm:h-4 border-l-2 border-b-2 border-white/15 rounded-bl-full" />
+        <div className="absolute -bottom-px -left-px w-3 h-3 sm:w-4 sm:h-4 border-r-2 border-t-2 border-white/15 rounded-tr-full" />
+        <div className="absolute -bottom-px -right-px w-3 h-3 sm:w-4 sm:h-4 border-l-2 border-t-2 border-white/15 rounded-tl-full" />
+
+        {/* Línea de medio campo */}
+        <div className="absolute left-0 right-0 top-1/2 h-px bg-white/15" />
+
+        {/* Círculo central */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[36%] aspect-square border-2 border-white/15 rounded-full" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
+
+        {/* Área y arco superior (rival) */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[62%] h-[15%] border-2 border-t-0 border-white/15" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[28%] h-[6%] border-2 border-t-0 border-white/15" />
+        <div className="absolute left-1/2 top-[12%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
+        <div
+          className="absolute left-1/2 top-[12%] -translate-x-1/2 -translate-y-1/2 w-[24%] aspect-square border-2 border-white/15 rounded-full"
+          style={{ clipPath: 'inset(50% 0 0 0)' }}
+        />
+
+        {/* Área y arco inferior (propia, donde se ubica el arquero) */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[62%] h-[15%] border-2 border-b-0 border-white/15" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[28%] h-[6%] border-2 border-b-0 border-white/15" />
+        <div className="absolute left-1/2 bottom-[12%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
+        <div
+          className="absolute left-1/2 bottom-[12%] -translate-x-1/2 translate-y-1/2 w-[24%] aspect-square border-2 border-white/15 rounded-full"
+          style={{ clipPath: 'inset(0 0 50% 0)' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Misma cancha rotada 90°: arco propio a la izquierda, arco rival a la
+// derecha. Mismas proporciones que la vertical, solo que transpuestas.
+function LineasCanchaHorizontal() {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-4 sm:inset-5 border-2 border-white/15 rounded-sm">
+
+        {/* Arcos de esquina */}
+        <div className="absolute -top-px -left-px w-3 h-3 sm:w-4 sm:h-4 border-r-2 border-b-2 border-white/15 rounded-br-full" />
+        <div className="absolute -top-px -right-px w-3 h-3 sm:w-4 sm:h-4 border-l-2 border-b-2 border-white/15 rounded-bl-full" />
+        <div className="absolute -bottom-px -left-px w-3 h-3 sm:w-4 sm:h-4 border-r-2 border-t-2 border-white/15 rounded-tr-full" />
+        <div className="absolute -bottom-px -right-px w-3 h-3 sm:w-4 sm:h-4 border-l-2 border-t-2 border-white/15 rounded-tl-full" />
+
+        {/* Línea de medio campo */}
+        <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/15" />
+
+        {/* Círculo central */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[36%] aspect-square border-2 border-white/15 rounded-full" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
+
+        {/* Área y arco derecho (rival) */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[15%] h-[62%] border-2 border-r-0 border-white/15" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[6%] h-[28%] border-2 border-r-0 border-white/15" />
+        <div className="absolute right-[12%] top-1/2 translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
+        <div
+          className="absolute right-[12%] top-1/2 translate-x-1/2 -translate-y-1/2 w-[24%] aspect-square border-2 border-white/15 rounded-full"
+          style={{ clipPath: 'inset(0 50% 0 0)' }}
+        />
+
+        {/* Área y arco izquierdo (propio, donde se ubica el arquero) */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[15%] h-[62%] border-2 border-l-0 border-white/15" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[6%] h-[28%] border-2 border-l-0 border-white/15" />
+        <div className="absolute left-[12%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
+        <div
+          className="absolute left-[12%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[24%] aspect-square border-2 border-white/15 rounded-full"
+          style={{ clipPath: 'inset(0 0 0 50%)' }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -166,8 +251,22 @@ export default function Formacion() {
   const [exportando, setExportando] = useState(false);
   const [errorExportar, setErrorExportar] = useState(null);
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
+  // Preferencia local (no sincronizada por Firestore): cada pantalla puede
+  // elegir su propia orientación aunque estén mirando la misma pizarra.
+  const [orientacion, setOrientacion] = useState(
+    () => (localStorage.getItem(ORIENTACION_KEY) === 'horizontal' ? 'horizontal' : 'vertical')
+  );
+  const horizontal = orientacion === 'horizontal';
   const canchaRef = useRef(null);
   const tableroRef = useRef(null);
+
+  function alternarOrientacion() {
+    setOrientacion((actual) => {
+      const siguiente = actual === 'vertical' ? 'horizontal' : 'vertical';
+      localStorage.setItem(ORIENTACION_KEY, siguiente);
+      return siguiente;
+    });
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -315,7 +414,7 @@ export default function Formacion() {
       // uno. Cualquier destino que no sea la banca es una posición válida.
       if (over.id !== 'banca') {
         const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
-        moverPelota(coords);
+        moverPelota(pantallaAModelo(coords, orientacion));
       }
       return;
     }
@@ -325,7 +424,7 @@ export default function Formacion() {
     if (rivales[id]) {
       if (over.id === 'cancha') {
         const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
-        moverRival(id, coords);
+        moverRival(id, pantallaAModelo(coords, orientacion));
       }
       return;
     }
@@ -337,7 +436,10 @@ export default function Formacion() {
     // Soltado sobre la cancha, o sobre su propia zona (arrastre corto que no
     // llega a salir de su propio droppable): se reubica en el punto soltado.
     if (over.id === 'cancha' || over.id === id) {
-      const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
+      const coords = pantallaAModelo(
+        coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect()),
+        orientacion
+      );
       const otros = Object.fromEntries(Object.entries(posiciones).filter(([pid]) => pid !== id));
       moverJugador(id, alinearConOtros(coords, otros));
       return;
@@ -490,6 +592,17 @@ export default function Formacion() {
         >
           {pantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla completa'}
         </button>
+        <button
+          type="button"
+          onClick={alternarOrientacion}
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider transition-colors ${
+            horizontal
+              ? 'bg-white text-zinc-900'
+              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+          }`}
+        >
+          {horizontal ? 'Vista vertical' : 'Vista horizontal'}
+        </button>
       </div>
 
       {/* Panel de pizarras: oculto en pantalla completa
@@ -602,67 +715,48 @@ export default function Formacion() {
 
           {/* Cancha (proporción fútbol 8: más corta y ancha que una de 11).
               Ancho fluido (flex-1) con un tope que crece si la banca está
-              oculta, para aprovechar el espacio horizontal liberado. */}
+              oculta, para aprovechar el espacio horizontal liberado. En
+              vista horizontal la cancha es la misma, rotada 90°: ver
+              utils/posiciones.js (modeloAPantalla/pantallaAModelo). */}
           <div
             ref={canchaRef}
-            className={`relative rounded-2xl overflow-hidden border border-zinc-700/40 aspect-[3/4] shadow-[inset_0_0_60px_rgba(0,0,0,0.5)] ${
+            className={`relative rounded-2xl overflow-hidden border border-zinc-700/40 shadow-[inset_0_0_60px_rgba(0,0,0,0.5)] ${
+              horizontal ? 'aspect-[4/3]' : 'aspect-[3/4]'
+            } ${
               pantallaCompleta
-                ? 'w-[min(100%,63.75vh)]'
-                : `w-full sm:flex-1 ${
-                    bancaAbierta
-                      ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
-                      : 'sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px] xl:max-w-[860px] 2xl:max-w-[1000px]'
-                  }`
+                ? horizontal
+                  ? 'w-[min(100%,113.33vh)]'
+                  : 'w-[min(100%,63.75vh)]'
+                : horizontal
+                  ? `w-full sm:flex-1 ${
+                      bancaAbierta
+                        ? 'sm:max-w-[760px] md:max-w-[900px] lg:max-w-[1100px] xl:max-w-[1300px] 2xl:max-w-[1500px]'
+                        : 'sm:max-w-[820px] md:max-w-[1020px] lg:max-w-[1240px] xl:max-w-[1480px] 2xl:max-w-[1720px]'
+                    }`
+                  : `w-full sm:flex-1 ${
+                      bancaAbierta
+                        ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
+                        : 'sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px] xl:max-w-[860px] 2xl:max-w-[1000px]'
+                    }`
             }`}
             style={{
-              background: 'linear-gradient(180deg, #06321a 0%, #0d5c2e 55%, #1f9b4d 100%)',
+              background: horizontal
+                ? 'linear-gradient(270deg, #06321a 0%, #0d5c2e 55%, #1f9b4d 100%)'
+                : 'linear-gradient(180deg, #06321a 0%, #0d5c2e 55%, #1f9b4d 100%)',
             }}
           >
             {/* Franjas de pasto cortado */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                backgroundImage:
-                  'repeating-linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 12.5%, rgba(0,0,0,0.08) 12.5%, rgba(0,0,0,0.08) 25%)',
+                backgroundImage: horizontal
+                  ? 'repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 12.5%, rgba(0,0,0,0.08) 12.5%, rgba(0,0,0,0.08) 25%)'
+                  : 'repeating-linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 12.5%, rgba(0,0,0,0.08) 12.5%, rgba(0,0,0,0.08) 25%)',
               }}
             />
 
             {/* Líneas de cancha (fútbol 8) */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-4 sm:inset-5 border-2 border-white/15 rounded-sm">
-
-                {/* Arcos de esquina */}
-                <div className="absolute -top-px -left-px w-3 h-3 sm:w-4 sm:h-4 border-r-2 border-b-2 border-white/15 rounded-br-full" />
-                <div className="absolute -top-px -right-px w-3 h-3 sm:w-4 sm:h-4 border-l-2 border-b-2 border-white/15 rounded-bl-full" />
-                <div className="absolute -bottom-px -left-px w-3 h-3 sm:w-4 sm:h-4 border-r-2 border-t-2 border-white/15 rounded-tr-full" />
-                <div className="absolute -bottom-px -right-px w-3 h-3 sm:w-4 sm:h-4 border-l-2 border-t-2 border-white/15 rounded-tl-full" />
-
-                {/* Línea de medio campo */}
-                <div className="absolute left-0 right-0 top-1/2 h-px bg-white/15" />
-
-                {/* Círculo central */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[36%] aspect-square border-2 border-white/15 rounded-full" />
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
-
-                {/* Área y arco superior (rival) */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[62%] h-[15%] border-2 border-t-0 border-white/15" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[28%] h-[6%] border-2 border-t-0 border-white/15" />
-                <div className="absolute left-1/2 top-[12%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
-                <div
-                  className="absolute left-1/2 top-[12%] -translate-x-1/2 -translate-y-1/2 w-[24%] aspect-square border-2 border-white/15 rounded-full"
-                  style={{ clipPath: 'inset(50% 0 0 0)' }}
-                />
-
-                {/* Área y arco inferior (propia, donde se ubica el arquero) */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[62%] h-[15%] border-2 border-b-0 border-white/15" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[28%] h-[6%] border-2 border-b-0 border-white/15" />
-                <div className="absolute left-1/2 bottom-[12%] -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-white/25 rounded-full" />
-                <div
-                  className="absolute left-1/2 bottom-[12%] -translate-x-1/2 translate-y-1/2 w-[24%] aspect-square border-2 border-white/15 rounded-full"
-                  style={{ clipPath: 'inset(0 0 50% 0)' }}
-                />
-              </div>
-            </div>
+            {horizontal ? <LineasCanchaHorizontal /> : <LineasCanchaVertical />}
 
             {/* Jugadores en sus posiciones libres */}
             <JugadoresCancha
@@ -672,10 +766,11 @@ export default function Formacion() {
               onCambiarModo={ciclarModoJugador}
               arrastrandoId={arrastrandoId}
               fichaAlFrente={zTop}
+              orientacion={orientacion}
             />
 
             {/* Pelota */}
-            <PelotaCancha pelota={pelota} arrastrandoId={arrastrandoId} fichaAlFrente={zTop} />
+            <PelotaCancha pelota={pelota} arrastrandoId={arrastrandoId} fichaAlFrente={zTop} orientacion={orientacion} />
 
             {/* Jugadores rivales */}
             <RivalesCancha
@@ -685,6 +780,7 @@ export default function Formacion() {
               onCambiarModo={ciclarModoRival}
               arrastrandoId={arrastrandoId}
               fichaAlFrente={zTop}
+              orientacion={orientacion}
             />
 
             {/* Pizarra táctica: flechas y anotaciones (lectura siempre, edición salvo con la herramienta "Mover") */}
@@ -700,6 +796,7 @@ export default function Formacion() {
               onRedimensionarTexto={redimensionarTexto}
               onEditarTexto={editarTexto}
               onEliminarTexto={eliminarTexto}
+              orientacion={orientacion}
             />
           </div>
 

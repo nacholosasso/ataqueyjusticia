@@ -7,6 +7,20 @@ function clampConMargen(valor, margen) {
   return Math.min(max, Math.max(min, valor));
 }
 
+// Las posiciones se guardan siempre en el sistema "vertical" (x = lateral,
+// y = eje arco propio→rival), sin importar cómo se esté mostrando la cancha
+// en pantalla. Estas dos funciones convierten entre ese espacio "modelo" y
+// el espacio "pantalla" (lo que realmente se ve, rotado 90° en vista
+// horizontal), para que lo que se guarda en Firestore sea independiente de
+// la orientación elegida en cada dispositivo. Son inversas entre sí.
+export function modeloAPantalla({ x, y }, orientacion) {
+  return orientacion === 'horizontal' ? { x: 100 - y, y: x } : { x, y };
+}
+
+export function pantallaAModelo({ x, y }, orientacion) {
+  return orientacion === 'horizontal' ? { x: y, y: 100 - x } : { x, y };
+}
+
 // Convierte el rect (viewport) de un elemento arrastrado a coordenadas %
 // (0-100) relativas al rect de la cancha, usando el centro del elemento.
 export function coordsDesdeRect(elRect, canchaRect) {

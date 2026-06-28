@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import CartaRival from './CartaRival';
 import { CartaRivalCirculo } from './CartaCirculo';
 import { zIndexFicha } from '../utils/zIndexFicha';
+import { modeloAPantalla } from '../utils/posiciones';
 
 function RivalArrastrable({ rivalId, numero, onQuitar, modo, onCambiarModo }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: rivalId });
@@ -34,10 +35,12 @@ function RivalArrastrable({ rivalId, numero, onQuitar, modo, onCambiarModo }) {
   );
 }
 
-export default function RivalesCancha({ rivales, onQuitar, modosRival, onCambiarModo, arrastrandoId, fichaAlFrente }) {
+export default function RivalesCancha({ rivales, onQuitar, modosRival, onCambiarModo, arrastrandoId, fichaAlFrente, orientacion }) {
   return (
     <>
-      {Object.entries(rivales).map(([rivalId, { x, y, numero }]) => {
+      {Object.entries(rivales).map(([rivalId, posModelo]) => {
+        const { numero } = posModelo;
+        const { x, y } = modeloAPantalla(posModelo, orientacion);
         const modo = modosRival[rivalId] ?? 'circulo';
         return (
           <div

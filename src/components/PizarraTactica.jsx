@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { TIPOS_FLECHA, TIPO_FLECHA_DEFAULT, ORDEN_TIPOS_FLECHA } from '../utils/tipoFlecha';
+import { modeloAPantalla, pantallaAModelo } from '../utils/posiciones';
 
 const COLOR_BORRAR = '#dc2626';
 const LARGO_MINIMO = 4; // % - distancia mínima para crear una flecha
@@ -104,12 +105,27 @@ export default function PizarraTactica({
   onRedimensionarTexto,
   onEditarTexto,
   onEliminarTexto,
+  orientacion,
 }) {
   // La herramienta "mover" es modo lectura para creación: no crea flechas ni
   // anotaciones nuevas al tocar la cancha vacía. Mover/editar lo que ya existe
   // (flechas, anotaciones, su tamaño) funciona siempre, sin importar la herramienta.
   const puedeCrear = herramienta !== 'mover';
   const svgRef = useRef(null);
+
+  // `flechas`/`anotaciones` llegan en espacio "modelo" (ver posiciones.js);
+  // todo lo demás en este componente (dibujo, arrastre, hit-testing) trabaja
+  // directamente en espacio "pantalla" (igual al viewBox del SVG), y sólo se
+  // vuelve a convertir a modelo al guardar (onAgregar/onMover/onMoverTexto).
+  const flechasPantalla = flechas.map((f) => {
+    const p1 = modeloAPantalla({ x: f.x1, y: f.y1 }, orientacion);
+    const p2 = modeloAPantalla({ x: f.x2, y: f.y2 }, orientacion);
+    return { ...f, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+  });
+  const anotacionesPantalla = anotaciones.map((a) => {
+    const p = modeloAPantalla({ x: a.x, y: a.y }, orientacion);
+    return { ...a, x: p.x, y: p.y };
+  });
   const [nueva, setNueva] = useState(null);
   const [arrastre, setArrastre] = useState(null);
   const [overrides, setOverrides] = useState({});
@@ -129,7 +145,8 @@ export default function PizarraTactica({
       if (limpio === '') {
         if (actual.id) onEliminarTexto(actual.id);
       } else if (actual.id === null) {
-        onAgregarTexto({ x: actual.x, y: actual.y, texto: limpio, color: actual.color });
+        const { x, y } = pantallaAModelo({ x: actual.x, y: actual.y }, orientacion);
+        onAgregarTexto({ x, y, texto: limpio, color: actual.color });
       } else if (limpio !== actual.original || actual.color !== actual.colorOriginal) {
         onEditarTexto(actual.id, { texto: limpio, color: actual.color });
       }
@@ -222,10 +239,10 @@ export default function PizarraTactica({
       const { x, y } = coordsDesdeEvento(svgRef.current, e);
       let coords;
       if (arrastre.modo === 'extremo1') {
-        const f = flechas.find((fl) => fl.id === arrastre.id);
+        const f = flechasPantalla.find((fl) => fl.id === arrastre.id);
         coords = { x1: x, y1: y, x2: f.x2, y2: f.y2 };
       } else if (arrastre.modo === 'extremo2') {
-        const f = flechas.find((fl) => fl.id === arrastre.id);
+        const f = flechasPantalla.find((fl) => fl.id === arrastre.id);
         coords = { x1: f.x1, y1: f.y1, x2: x, y2: y };
       } else if (arrastre.modo === 'texto') {
         const dx = x - arrastre.inicioX;
@@ -262,7 +279,9 @@ export default function PizarraTactica({
     if (nueva) {
       const largo = Math.hypot(nueva.x2 - nueva.x1, nueva.y2 - nueva.y1);
       if (largo >= LARGO_MINIMO) {
-        onAgregar({ x1: nueva.x1, y1: nueva.y1, x2: nueva.x2, y2: nueva.y2, tipo: herramienta });
+        const p1 = pantallaAModelo({ x: nueva.x1, y: nueva.y1 }, orientacion);
+        const p2 = pantallaAModelo({ x: nueva.x2, y: nueva.y2 }, orientacion);
+        onAgregar({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, tipo: herramienta });
       }
       setNueva(null);
       return;
@@ -272,7 +291,7 @@ export default function PizarraTactica({
         const coords = overrides[arrastre.id] ?? arrastre.orig;
         const distancia = Math.hypot(coords.x - arrastre.orig.x, coords.y - arrastre.orig.y);
         if (distancia > UMBRAL_CLIC_TEXTO) {
-          onMoverTexto(arrastre.id, coords);
+          onMoverTexto(arrastre.id, pantallaAModelo(coords, orientacion));
         } else {
           setEditor({
             id: arrastre.id,
@@ -286,7 +305,11 @@ export default function PizarraTactica({
         }
       } else {
         const coords = overrides[arrastre.id];
-        if (coords) onMover(arrastre.id, coords);
+        if (coords) {
+          const p1 = pantallaAModelo({ x: coords.x1, y: coords.y1 }, orientacion);
+          const p2 = pantallaAModelo({ x: coords.x2, y: coords.y2 }, orientacion);
+          onMover(arrastre.id, { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+        }
       }
       setArrastre(null);
       setOverrides((prev) => {
@@ -317,7 +340,7 @@ export default function PizarraTactica({
           ))}
         </defs>
 
-        {flechas.map((f, index) => {
+        {flechasPantalla.map((f, index) => {
           const { x1, y1, x2, y2 } = overrides[f.id] ?? f;
           const tipo = f.tipo ?? TIPO_FLECHA_DEFAULT;
           const color = TIPOS_FLECHA[tipo].color;
@@ -387,7 +410,7 @@ export default function PizarraTactica({
           );
         })}
 
-        {anotaciones.map((a) => {
+        {anotacionesPantalla.map((a) => {
           if (editor?.id === a.id) return null;
           const datos = overrides[a.id] ?? {};
           const x = datos.x ?? a.x;

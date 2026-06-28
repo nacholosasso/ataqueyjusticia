@@ -1,12 +1,14 @@
 import { useDraggable } from '@dnd-kit/core';
 import { zIndexFicha } from '../utils/zIndexFicha';
+import { modeloAPantalla } from '../utils/posiciones';
 
-export default function PelotaCancha({ pelota, arrastrandoId, fichaAlFrente }) {
+export default function PelotaCancha({ pelota, arrastrandoId, fichaAlFrente, orientacion }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: 'pelota' });
+  const { x, y } = modeloAPantalla(pelota, orientacion);
 
   const style = {
-    left: `${pelota.x}%`,
-    top: `${pelota.y}%`,
+    left: `${x}%`,
+    top: `${y}%`,
     transform: transform
       ? `translate3d(calc(-50% + ${transform.x}px), calc(-50% + ${transform.y}px), 0)`
       : 'translate(-50%, -50%)',
