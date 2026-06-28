@@ -454,7 +454,11 @@ export default function Formacion() {
   const modoRivalActivo = rivalActivo ? modosRival[arrastrandoId] ?? 'circulo' : null;
 
   return (
-    <div className="w-full max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl 2xl:max-w-screen-2xl mx-auto">
+    <div
+      className={`w-full mx-auto ${
+        horizontal ? 'max-w-[1800px]' : 'max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl 2xl:max-w-screen-2xl'
+      }`}
+    >
       <p className="text-center text-zinc-500 text-xs font-bold uppercase tracking-[0.3em] mb-3">
         Formación{tipo ? ` · ${tipo}` : ''}
       </p>
@@ -728,11 +732,10 @@ export default function Formacion() {
                   ? 'w-[min(100%,113.33vh)]'
                   : 'w-[min(100%,63.75vh)]'
                 : horizontal
-                  ? `w-full sm:flex-1 ${
-                      bancaAbierta
-                        ? 'sm:max-w-[760px] md:max-w-[900px] lg:max-w-[1100px] xl:max-w-[1300px] 2xl:max-w-[1500px]'
-                        : 'sm:max-w-[820px] md:max-w-[1020px] lg:max-w-[1240px] xl:max-w-[1480px] 2xl:max-w-[1720px]'
-                    }`
+                  // Sin tope propio: que llene todo el ancho que le deje el
+                  // contenedor (acotado por el max-w-[1800px] de más arriba),
+                  // para aprovechar al máximo una pantalla ancha.
+                  ? 'w-full sm:flex-1'
                   : `w-full sm:flex-1 ${
                       bancaAbierta
                         ? 'sm:max-w-[440px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[760px] 2xl:max-w-[880px]'
