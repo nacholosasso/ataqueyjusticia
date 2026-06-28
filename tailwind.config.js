@@ -9,6 +9,9 @@ export default {
       fontFamily: {
         display: ['"Bebas Neue"', 'cursive'],
       },
+      zIndex: {
+        25: '25',
+      },
     },
   },
   plugins: [],
