@@ -413,7 +413,7 @@ export default function Formacion() {
       // por encima de la cancha entera cuando la pelota se suelta cerca de
       // uno. Cualquier destino que no sea la banca es una posición válida.
       if (over.id !== 'banca') {
-        const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
+        const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect(), 0.06);
         moverPelota(pantallaAModelo(coords, orientacion));
       }
       return;
@@ -423,7 +423,9 @@ export default function Formacion() {
 
     if (rivales[id]) {
       if (over.id === 'cancha') {
-        const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
+        const modoRival = modosRival[id] ?? 'circulo';
+        const anchoFraccion = modoRival === 'circulo' ? 0.1 : 0.18;
+        const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect(), anchoFraccion);
         moverRival(id, pantallaAModelo(coords, orientacion));
       }
       return;
@@ -436,8 +438,13 @@ export default function Formacion() {
     // Soltado sobre la cancha, o sobre su propia zona (arrastre corto que no
     // llega a salir de su propio droppable): se reubica en el punto soltado.
     if (over.id === 'cancha' || over.id === id) {
+      // El margen se calcula a partir del tamaño que va a tener la ficha ya
+      // puesta en la cancha (circulo/fifa/stats), no del elemento arrastrado:
+      // si viene de la banca, ese es una carta grande, no el círculo chico.
+      const modo = modosJugador[id] ?? 'circulo';
+      const anchoFraccion = modo === 'circulo' ? 0.1 : 0.18;
       const coords = pantallaAModelo(
-        coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect()),
+        coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect(), anchoFraccion),
         orientacion
       );
       const otros = Object.fromEntries(Object.entries(posiciones).filter(([pid]) => pid !== id));

@@ -23,11 +23,23 @@ export function pantallaAModelo({ x, y }, orientacion) {
 
 // Convierte el rect (viewport) de un elemento arrastrado a coordenadas %
 // (0-100) relativas al rect de la cancha, usando el centro del elemento.
-export function coordsDesdeRect(elRect, canchaRect) {
+//
+// `anchoFraccion`, si se pasa, fuerza el margen a partir del tamaño real que
+// va a tener la ficha una vez ubicada en la cancha (fracción 0-1 del ancho de
+// la cancha, asumiendo ficha cuadrada), en vez del tamaño del elemento que se
+// está arrastrando: al arrastrar un jugador desde la banca, ese elemento es
+// la carta grande, no el círculo chico en el que se convierte al soltarlo, y
+// usar su tamaño daba un margen insuficiente que dejaba la ficha recortada
+// cerca de los bordes.
+export function coordsDesdeRect(elRect, canchaRect, anchoFraccion) {
   const centroX = elRect.left + elRect.width / 2;
   const centroY = elRect.top + elRect.height / 2;
-  const margenX = (elRect.width / 2 / canchaRect.width) * 100;
-  const margenY = (elRect.height / 2 / canchaRect.height) * 100;
+  const margenX = anchoFraccion != null
+    ? (anchoFraccion / 2) * 100
+    : (elRect.width / 2 / canchaRect.width) * 100;
+  const margenY = anchoFraccion != null
+    ? margenX * (canchaRect.width / canchaRect.height)
+    : (elRect.height / 2 / canchaRect.height) * 100;
   return {
     x: clampConMargen(((centroX - canchaRect.left) / canchaRect.width) * 100, margenX),
     y: clampConMargen(((centroY - canchaRect.top) / canchaRect.height) * 100, margenY),
