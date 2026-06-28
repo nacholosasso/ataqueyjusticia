@@ -308,7 +308,12 @@ export default function Formacion() {
     if (!over) return;
 
     if (active.id === 'pelota') {
-      if (over.id === 'cancha') {
+      // No se restringe a `over.id === 'cancha'`: como las fichas de jugador
+      // son rects mucho más chicos, dnd-kit (que elige el droppable por
+      // mayor proporción de intersección) casi siempre prioriza al jugador
+      // por encima de la cancha entera cuando la pelota se suelta cerca de
+      // uno. Cualquier destino que no sea la banca es una posición válida.
+      if (over.id !== 'banca') {
         const coords = coordsDesdeRect(active.rect.current.translated, canchaRef.current.getBoundingClientRect());
         moverPelota(coords);
       }
