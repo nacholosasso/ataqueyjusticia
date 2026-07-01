@@ -30,3 +30,10 @@ npm-debug.log*
 
 # claude code
 .claude/
+
+# android — NUNCA subir al repositorio
+android/*.keystore
+android/signing-key-info.txt
+android/*.aab
+android/*.apk
+android/Readme.html
