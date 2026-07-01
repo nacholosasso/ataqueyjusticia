@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.ataqueyjusticia.app",
-        "sha256_cert_fingerprints": ["88:D1:EE:42:64:E2:2D:97:1C:84:F4:20:01:53:B0:9F:1E:EF:17:2A:18:EB:72:C4:74:73:44:A7:B2:4A:DB:31"]
-      }
-    }]
